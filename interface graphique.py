@@ -6,7 +6,7 @@ Created on Wed Jan  6 15:43:25 2021
 """
 import PySimpleGUI as sg
 import matplotlib.pyplot as plt
-import extrapy.Behaviour as B
+import Behaviour as B
 import numpy as np
 import wheel_speed as ws
 import glob

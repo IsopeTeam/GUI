@@ -8,7 +8,7 @@ Behaviour--> Group XX --> XXX (mouse number) --> Fixed Delay --> XXX (protocole 
                                                  Random Delay
 
 
-Ephy--> Group XX --> XXX (CM16_Buz - Female) --> Experiment --> Fixed Delay --> XXX (protocole type) --> all the elec
+Ephy--> Group XX --> XXX (CM16_Buz - Female) --> Experiment --> Fixed Delay --> XXX (protocole type) --> condition (for exemple No Stim) --> all the elec
                                                                 Random Delay
 
 The GUI won't work if the foler structure is different

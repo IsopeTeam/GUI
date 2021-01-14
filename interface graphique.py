@@ -19,33 +19,43 @@ def plot_maker(lick_data, title, reward_time, raster, PSTH, wheel, wheel_data):
     I didn't manage to find a way to properly display only one graphe, plot_nb = 2 alow to at least display 
     the graph even if a second empty graph is created
     """
-    if plot_nb == 1:
-        plot_nb=2
     fig, ax = plt.subplots(plot_nb, 1, sharex=True)
     fig.suptitle(title,weight='bold') #main figure title
     plot_position = 0
+    if plot_nb==1:
+        axes=ax
+    elif plot_nb>1:
+        axes=ax[plot_position]
 
     if raster:
         #first subplot (Raster)
-        B.scatter_lick(lick_data, ax[plot_position], x_label=None)
-        ax[plot_position].set_title('RASTER') #Raster subplot title
+        B.scatter_lick(lick_data, axes, x_label=None)
+        axes.set_title('RASTER') #Raster subplot title
         plot_position +=1
+    
     
     if PSTH:
         #second subplot (PSTH)
-        B.psth_lick(lick_data, ax[plot_position]) #PSTH graph 
-        ax[plot_position].set_ylabel('nb of occurence') #PSTH title
-        ax[plot_position].set_title('PSTH') #PSTH y label
+        if plot_nb >1:
+            axes=ax[plot_position]
+    
+        #second subplot (PSTH)
+        B.psth_lick(lick_data, axes) #PSTH graph 
+        axes.set_ylabel('nb of occurence') #PSTH title
+        axes.set_title('PSTH') #PSTH y label
         plot_position +=1
     
     if wheel:
+        #second subplot (PSTH)
+        if plot_nb >1:
+            axes=ax[plot_position]
         #third subplot (wheel speed)
-        ax[plot_position].plot(wheel_data[:,0], wheel_data[:,1])
-        ax[plot_position].set_ylabel('Wheel speed (cm/s)') #PSTH title
-        ax[plot_position].set_title('Wheel speed') #PSTH y label
+        axes.plot(wheel_data[:,0], wheel_data[:,1])
+        axes.set_ylabel('Wheel speed (cm/s)') #PSTH title
+        axes.set_title('Wheel speed') #PSTH y label
         
     
-    ax[plot_nb-1].set_xlabel('Time (s)') #PSTH x label 
+    axes.set_xlabel('Time (s)') #PSTH x label 
         
     current_reward_time=2.05+(float(reward_time)/1000) #determine when the reward happen depending of the keys of the dictionary
     ax = ax.ravel()
@@ -100,11 +110,25 @@ def graphique_random(param_file_path, lick_file_path, dic_graph_choice, raster, 
 sg.theme('DarkBlue')	
 
 
+#column for time frequency plots
+column1 = [[sg.Text('Chanel 0', justification='center', size=(10, 1))],          
+            [sg.Checkbox('Amplitude', default=True,key='Ch_group0_amplitude')],
+            [sg.Checkbox('Power', default=True, key='Ch_group0_power')]]      
+
+column2 = [[sg.Text('Chanel 1', justification='center', size=(10, 1))],      
+            [sg.Checkbox('Amplitude', default=True,key='Ch_group1_amplitude')],
+            [sg.Checkbox('Power', default=True, key='Ch_group1_power')]]  
+
+
+
+            #folder searching 
 layout= [   [sg.Text('Select data folder     '), sg.InputText(), sg.FolderBrowse(key='main_folder'),sg.Button('Load folder', key='-load-')],
             [sg.Text('Select group       '), sg.InputCombo(values=[], size=(20, 1), key='group_nb', enable_events=True)],            
             [sg.Text('Select mice        '), sg.InputCombo(values=[], size=(20, 1), key='mice_nb', enable_events=True)],            
             [sg.Radio('Random delay', 'radio_delay', key='radio_random', default=True, enable_events=True), sg.Radio('fixe delay', 'radio_delay', key='radio_fixe', enable_events=True)],            
             [sg.Text('Select protocole   '), sg.InputCombo(values=[], size=(20, 1), key='protocole', enable_events=True)],
+            [sg.Text('Select condition   '), sg.InputCombo(values=[], size=(20, 1), key='condition', enable_events=True)],
+            #Behaviour
             [sg.Text('_'  * 80)], [sg.Text('Behaviour', size=(30, 1), justification='center', font=("Helvetica", 13), relief=sg.RELIEF_RIDGE)], 
             [sg.Frame(layout=[      
             [sg.Checkbox('400', default=True, key='400'), sg.Checkbox('400_400', default=True, key='400_400'), \
@@ -116,9 +140,16 @@ layout= [   [sg.Text('Select data folder     '), sg.InputText(), sg.FolderBrowse
             [sg.Checkbox('Raster', default=True, key='display_raster'), sg.Checkbox('PSTH', default=True,key='display_PSTH'), \
             sg.Checkbox('Wheel speed', default=True, key='display_wheel')]], title='Graph to display',title_color='red', relief=sg.RELIEF_SUNKEN)],
             [sg.Button('Display plot', key='-behaviour plot-')],
+            #Electrophy
             [sg.Text('_'  * 80)], [sg.Text('Electrophysiology', size=(30, 1), justification='center', font=("Helvetica", 13), relief=sg.RELIEF_RIDGE)],
-            [sg.Button('Display plot', key='-electrophy plot-')]            
-            ]
+                #whole session average
+            [sg.Frame(layout=[[sg.Checkbox('Chanel 0', default=True, key='Ch_group0'), sg.Checkbox('Chanel 1', default=True,key='Ch_group1')]] \
+            ,title='Whole session average (by shank)',title_color='red', relief=sg.RELIEF_SUNKEN),\
+                #Time frequency
+            sg.Frame(layout=[[sg.Column(column1),sg.Column(column2)]], title='Time Frequency (by shank)',title_color='red', relief=sg.RELIEF_SUNKEN)],
+            [sg.Button('Display plot', key='-electrophy plot-')]  
+            ]          
+            
 
                                                       
 window= sg.Window('', layout, location=(0,0))
@@ -128,6 +159,7 @@ group_nb = ''
 mice_nb = ''
 expermiment_type = 'Random Delay'
 protocol_type = ''
+conditon_type = ''
 while True:
     event, values = window.read()
 
@@ -141,26 +173,30 @@ while True:
             path_dic = gf.path_finder(values['main_folder'], group_nb, mice_nb, expermiment_type, protocol_type)
 
             group = path_dic["list_group"]
-            group.insert(0, 'all')
+            #group.insert(0, 'all')
             window.FindElement('group_nb').Update(values=group)
             
             mice = path_dic["list_mice"]
-            mice.insert(0, 'all')
+            #mice.insert(0, 'all')
             window.FindElement('mice_nb').Update(values=mice)
             
             protocol = path_dic["list_protocol"]
-            protocol.insert(0, 'all')
+            #protocol.insert(0, 'all')
             window.FindElement('protocole').Update(values=protocol)
+            
+            condition = path_dic["list_condition"]
+            #mice.insert(0, 'all')
+            window.FindElement('condition').Update(values=condition)
             
         if event == 'group_nb':
             group_nb=values['group_nb']
-            if group_nb == 'all':
-                group_nb=''
+            #if group_nb == 'all':
+                #group_nb=''
             
             path_dic = gf.path_finder(values['main_folder'], group_nb, mice_nb, expermiment_type, protocol_type)
                 
             mice = path_dic["list_mice"]
-            mice.insert(0, 'all')
+            #mice.insert(0, 'all')
             window.FindElement('mice_nb').Update(values=mice)
             
             #if the previously selected mouse is not in the current select group the mice's input combo is cleared
@@ -175,8 +211,8 @@ while True:
         
         if event == 'mice_nb':
             mice_nb=values['mice_nb']
-            if mice_nb == 'all':
-                mice_nb=''
+            #if mice_nb == 'all':
+                #mice_nb=''
             path_dic = gf.path_finder(values['main_folder'], group_nb, mice_nb, expermiment_type, protocol_type)
         
         if event == 'radio_fixe':
@@ -189,8 +225,8 @@ while True:
         
         if event == 'protocole':
             protocol_type = values['protocole']
-            if protocol_type == 'all':
-                protocol_type=''
+            #if protocol_type == 'all':
+                #protocol_type=''
             path_dic = gf.path_finder(values['main_folder'], group_nb, mice_nb, expermiment_type, protocol_type)
             
     #behaviour plotting
@@ -232,8 +268,11 @@ while True:
             if values['radio_fixe']:   #if we chose fixe delay
                 graphique_fixe(lick_path, values['display_raster'],values['display_PSTH'], values['display_wheel'], coder_path)
         
-        #if event == '-electrophy plot-':
-        
+    #electrophy plotting
+        if event == '-electrophy plot-':
+            gf.ephy_plot(path_dic['list_condition_path_ephy'][0],values['Ch_group0'], values['Ch_group1']\
+                         ,values['Ch_group0_power'], values['Ch_group1_power'], values['Ch_group0_amplitude'], values['Ch_group1_amplitude'])
+    
     except:
         pass
     

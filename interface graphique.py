@@ -12,6 +12,7 @@ import GUI_function_working as gf
 import glob
 import os
 
+
 def plot_maker(lick_data, title, reward_time, raster, PSTH, wheel, wheel_data):
     
     plot_nb = int(raster)+int(PSTH)+int(wheel)
@@ -94,7 +95,7 @@ def graphique_fixe(lick_file_path, raster, PSTH, wheel, wheel_path, condition_ty
         
     if wheel:
         wheel_predata = B.load_lickfile(wheel_path, wheel=True)
-        wheel_data = gf.wheel_speed(wheel_predata, condition_type)
+        wheel_data, _ = gf.wheel_speed(wheel_predata, condition_type)
     else:
         wheel_data = None
     
@@ -127,7 +128,7 @@ def graphique_random(param_file_path, lick_file_path, dic_graph_choice, raster, 
                 nb_trials=[1, 60]
             
             if wheel:
-                wheel_data = gf.wheel_speed(wheel_by_delay[cle], condition_type)
+                wheel_data, _ = gf.wheel_speed(wheel_by_delay[cle], condition_type)
 
             if raster or PSTH:
                 lick_data_temp = licks_by_delay[cle]
@@ -178,27 +179,27 @@ columnB = [[sg.Frame(layout=[[sg.Radio('Chanel 0','radio_shank', key='Ch_group0'
            [sg.Frame(layout=[
             [sg.Radio('On', 'radio_bandpass', key='on_bandpass', default=False), sg.Radio('Off', 'radio_bandpass', key='off_bandpass', default=True, enable_events=True)],
             [sg.Text('high frequency :'), sg.Spin(values=list(range(0,40000,1)), initial_value=30,key='freq_high', size=(10,1))], 
-            [sg.Text('low frequency   :'), sg.Spin(values=list(range(0,40000,1)), initial_value=0,key='freq_low', size=(10,1))],
-            [sg.Text('Sample rate      :'), sg.Spin(values=list(range(0,40000,1)), initial_value=20000,key='sample_rate', size=(10,1))]] 
+            [sg.Text('low frequency  :'), sg.Spin(values=list(range(0,40000,1)), initial_value=0,key='freq_low', size=(10,1))],
+            [sg.Text('Sample rate    :'), sg.Spin(values=list(range(0,40000,1)), initial_value=20000,key='sample_rate', size=(10,1))]] 
             ,title='Bandpass filter', title_color='red', relief=sg.RELIEF_SUNKEN, tooltip='Even if the bandpass filter is off the value is use for de ridge line')]]
   
 
   
 
 random_section = [[sg.Frame(layout=[      
-            [sg.Checkbox('400', default=True, key='400'), sg.Checkbox('400_400', default=True, key='400_400'), \
-            sg.Checkbox('900_400', default=True, key='900_400'), sg.Checkbox('400_400_400', default=True, key='400_400_400'), \
-            sg.Checkbox('900_400_400', default=True, key='900_400_400')],[sg.Checkbox('900', default=True, key='900'), \
-            sg.Checkbox('900_900', default=True, key='900_900'), sg.Checkbox('400_900', default=True, key='400_900'), sg.Checkbox('900_900_900', default=True, key='900_900_900'), \
-            sg.Checkbox('400_900_900', default=True, key='400_900_900')]],\
+            [sg.Checkbox('400', default=True, key='400'), sg.Checkbox('400_400', default=False, key='400_400'), \
+            sg.Checkbox('900_400', default=False, key='900_400'), sg.Checkbox('400_400_400', default=False, key='400_400_400'), \
+            sg.Checkbox('900_400_400', default=False, key='900_400_400')],[sg.Checkbox('900', default=True, key='900'), \
+            sg.Checkbox('900_900', default=False, key='900_900'), sg.Checkbox('400_900', default=False, key='400_900'), sg.Checkbox('900_900_900', default=False, key='900_900_900'), \
+            sg.Checkbox('400_900_900', default=False, key='400_900_900')]],\
             title='trial to display',title_color='red', relief=sg.RELIEF_SUNKEN, tooltip='Last number is the current reward time')]]
 
             #folder searching 
 layout= [   [sg.Text('Select data folder     '), sg.InputText('//equipe2-nas1/F.LARENO-FACCINI/BACKUP FEDE', key='main_folder'), sg.FolderBrowse(),sg.Button('Load folder', key='-load-')],
-            [sg.Text('Select group       '), sg.InputCombo(values=[], size=(20, 1), key='group_nb', enable_events=True)],            
+            [sg.Text('Select group       '), sg.InputCombo(values=[], size=(20, 1), key='group_nb', enable_events=True)],
             [sg.Text('Select mice        '), sg.InputCombo(values=[], size=(20, 1), key='mice_nb', enable_events=True)],            
             #sg.Radio('Training', 'radio_delay', key='training', default=False, enable_events=True),
-            [sg.Radio('Random delay', 'radio_delay', key='radio_random', default=True, enable_events=True), sg.Radio('fixe delay', 'radio_delay', key='radio_fixe', enable_events=True)],
+            [sg.Radio('Random delay', 'radio_delay', key='radio_random', default=True, enable_events=True), sg.Radio('Fixe delay', 'radio_delay', key='radio_fixe', enable_events=True), sg.Radio('Training', 'radio_delay', key='radio_training', enable_events=True)],
             [sg.pin(sg.Column(random_section, key='random_section'))],            
             [sg.Text('Select protocole   '), sg.InputCombo(values=[], size=(20, 1), key='protocole', enable_events=True)],
             [sg.Text('Select condition   '), sg.InputCombo(values=[], size=(20, 1), key='condition', enable_events=True)],
@@ -226,6 +227,8 @@ mice_nb = ''
 expermiment_type = 'Random Delay'
 protocol_type = ''
 condition_type = ''
+list_condition = ['No Stim', 'Stim']
+
 while True:
     event, values = window.read()
     
@@ -245,12 +248,9 @@ while True:
             mice = path_dic["list_mice"]
             #mice.insert(0, 'all')
             window.FindElement('mice_nb').Update(values=mice)
+                     
             
-            protocol = path_dic["list_protocol"]
-            #protocol.insert(0, 'all')
-            window.FindElement('protocole').Update(values=protocol)
-            
-            condition = path_dic["list_condition"]
+            condition = list_condition
             window.FindElement('condition').Update(values=condition)
         
         if event == '-clear plot-':
@@ -292,6 +292,9 @@ while True:
             
             protocol = path_dic["list_protocol"]
             window.FindElement('protocole').Update(values=protocol)
+            
+            condition = list_condition
+            window.FindElement('condition').Update(values=condition)
 
         if event == 'radio_random':
             expermiment_type = 'Random Delay'
@@ -305,12 +308,15 @@ while True:
             
             protocol = path_dic["list_protocol"]
             window.FindElement('protocole').Update(values=protocol)
-        """
-        if event == 'training':
+            
+            condition = list_condition
+            window.FindElement('condition').Update(values=condition)
+    
+        if event == 'radio_training':
             expermiment_type = 'Training'
             protocol_type = ''
             window.Element('protocole').Update(protocol_type)
-            condition_type = ''
+            condition_type = 'No Stim'
             window.Element('condition').Update(condition_type)
             
             path_dic = gf.path_finder(values['main_folder'], group_nb, mice_nb, expermiment_type, protocol_type, condition_type)
@@ -319,9 +325,10 @@ while True:
             protocol = path_dic["list_protocol"]
             window.FindElement('protocole').Update(values=protocol)
             
-            condition_type = 'all'
-            window.FindElement('condition').Update(values=condition_type)
-        """
+            condition = ['No Stim']
+            window.FindElement('condition').Update(values=condition)
+            
+        
         if event == 'protocole':
             protocol_type = values['protocole']
             
@@ -339,26 +346,10 @@ while True:
             
     #behaviour plotting
         if event == '-behaviour plot-':
-            if len(path_dic['list_protocol_path_behaviour'])==1:
-                behaviour_path=path_dic['list_protocol_path_behaviour'][0]
                 
             lick_path=glob.glob(os.path.join(path_dic['list_protocol_path_behaviour'][0], '*.lick'))
             param_path=glob.glob(os.path.join(path_dic['list_protocol_path_behaviour'][0], '*.param'))
             coder_path=glob.glob(os.path.join(path_dic['list_protocol_path_behaviour'][0], '*.coder'))
-            if len(lick_path)==0:
-                sg.popup_error('no .lick file found')
-            if len(lick_path)>1:
-                sg.popup_error('more than one .lick file found')
-                
-            if len(param_path)==0:
-                sg.popup_error('no .param file found')
-            if len(param_path)>1:
-                sg.popup_error('more than one .param file found')
-                
-            if len(coder_path)==0:
-                sg.popup_error('no .coder file found')
-            if len(coder_path)>1:
-                sg.popup_error('more than one .coder file found')
             
             lick_path = os.path.normpath(lick_path[0])
             param_path = os.path.normpath(param_path[0])
@@ -385,18 +376,17 @@ while True:
             graph_dic = {'ws_average' : values['ws_average'], 'ws_phase': values['ws_phase'], 'hm_amplitude': values['hm_amplitude'], 'hm_power': values['hm_power'], 'rl_intensity': values['rl_intensity'], 'rl_frequency': values['rl_frequency']}            
             path_ephy_dic = {'protocol_path' : os.path.normpath(path_dic['list_protocol_path_ephy'][0]), 'condition_path' : os.path.normpath(path_dic['list_condition_path_ephy'][0])}
             
-            if values['radio_random']:
+            if values['radio_random'] or values['radio_training']:
                 dic_time = {"400":values['400'],"400_400":values['400_400'],"900_400":values['400_400'],"400_400_400":values['400_400_400'],"900_400_400":values['900_400_400'],"900":values['900'],"900_900":values['900_900'],"400_900":values['400_900'],"900_900_900":values['900_900_900'],"400_900_900":values['400_900_900']}
                 
-                lick_path=glob.glob(os.path.join(path_dic['list_protocol_path_behaviour'][0], '*.lick'))
+                lick_path=glob.glob(os.path.join(path_dic['list_protocol_path_behaviour'][0], '*.coder'))
                 param_path=glob.glob(os.path.join(path_dic['list_protocol_path_behaviour'][0], '*.param'))
-                path_ephy_dic['lick_path'] = os.path.normpath(lick_path[0])
+                path_ephy_dic['wheel_path'] = os.path.normpath(lick_path[0])
                 path_ephy_dic['param_path'] = os.path.normpath(param_path[0])
-                
-                gf.random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, protocol_type, condition_type, bandpass_dic, shank_dic)
-            
+                gf.random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, expermiment_type, protocol_type, condition_type, bandpass_dic, shank_dic)
             if values['radio_fixe']:
                 gf.ephy_plot(path_ephy_dic, graph_dic, mice_nb, protocol_type, condition_type, bandpass_dic, shank_dic)
+
 
     except:
         pass

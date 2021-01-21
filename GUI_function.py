@@ -39,8 +39,7 @@ def wheel_speed (wheel, condition_type='No Stim'):
     and do not match
     """
     v = np.array([[t,w, (3.875/(w-wheel[indx-1,1]))]for indx,(t,w) in enumerate(wheel)]) 
-    
-        
+   
     """
     dic which separates the data of every trial in order for them to be averaged later. 
     the key is the trial number and the value is a ndarray of the time at which 
@@ -52,7 +51,8 @@ def wheel_speed (wheel, condition_type='No Stim'):
     elif condition_type == 'Stim':
         nb_trials= [31,60]
     else:
-        nb_trials=[1, 60]
+        last_trial_nb = v[:,0]
+        nb_trials=[1, int(last_trial_nb[-1])]
         
     trial_dic ={}
     for i in range(nb_trials[0],nb_trials[1]+1): 
@@ -81,7 +81,6 @@ def wheel_speed (wheel, condition_type='No Stim'):
     """
     The values of every time slices are then averaged
     """
-            
     for cle1,val1 in sampling_dic.items():
         sampling_dic[cle1] = np.median(val1)  #For the moment let's use median, this allows us to average the wheel data in the future
         
@@ -96,8 +95,7 @@ def wheel_speed (wheel, condition_type='No Stim'):
     y = gaussian_filter1d(y,sigma=2)
         
     data = np.array([[x[i],y[i]]for i in range(len(x))])
-    
-    return data
+    return data, trial_dic
     
     ### This is just a different style of coding the previous lines, just to see the personal differences ###
     # lists = np.array(sorted(sampling_dic.items()))
@@ -110,86 +108,81 @@ def path_finder(main_folder_path, group_nb = '', mice_nb = '', experiment_type =
     we can specify which group, mice_nb, experiment type, protocole type, condition type. 
     The folder structure need to be respected for it to work properly (see Github/TeamIsope/GUI/ReadMe)    
     """
-    group_nb = fr'*{group_nb}'
+    group_nb = group_nb.split(' ')[-1] #this is done to not load folder wich dont start by Group
+    group_nb = fr'*Group {group_nb}*'
     mice_nb = fr'*{mice_nb}'
     experiment_type = fr'*{experiment_type}'
     protocol_type = fr'*{protocol_type}'
     condition_type = fr'{condition_type}'
-    
+
     #first we save the path to all the folder with the name 'group_nb'
     list_group_path_ephy = glob.glob(os.path.join(main_folder_path+'/Ephy', group_nb))
     list_group_path_behaviour = glob.glob(os.path.join(main_folder_path+'/Behaviour', group_nb))      
     list_group = [os.path.basename(group)for group in list_group_path_behaviour]
+    dic = {"list_group_path_ephy": list_group_path_ephy,"list_group_path_behaviour": list_group_path_behaviour,"list_group": list_group}
     
-    #in thoses folders we save the path to all the folder with the name 'mice_nb'
-    list_mice_path_ephy = [glob.glob(os.path.join(group_path+fr'/{mice_nb} (CM16-Buz - *'))for group_path in list_group_path_ephy]
-    list_mice_path_ephy = [item for sublist in list_mice_path_ephy for item in sublist]
+    #this if cascade is there to avoid loading evry thing at first and save a lot of loading time
+    if group_nb!='*':
+        #in thoses folders we save the path to all the folder with the name 'mice_nb'
+        list_mice_path_ephy = [glob.glob(os.path.join(group_path, mice_nb))for group_path in list_group_path_ephy]
+        list_mice_path_ephy = [item for sublist in list_mice_path_ephy for item in sublist]
+        dic["list_mice_path_ephy"] = list_mice_path_ephy
+        
+        list_mice_path_behaviour = [glob.glob(os.path.join(group_path, mice_nb))for group_path in list_group_path_behaviour]
+        list_mice_path_behaviour = [item for sublist in list_mice_path_behaviour for item in sublist]
+        dic["list_mice_path_behaviour"] = list_mice_path_behaviour
+        
+        list_mice = [os.path.basename(mice)for mice in list_mice_path_behaviour]
+        dic["list_mice"]= list_mice
+        
+        if mice_nb!='*':
+            #in thoses folders we load all the folder with th name experiment_type 
+            list_experiment_path_ephy = [glob.glob(os.path.join(mice_path, experiment_type))for mice_path in list_mice_path_ephy]
+            list_experiment_path_ephy = [item for sublist in list_experiment_path_ephy for item in sublist]
+            dic["list_experiment_path_ephy"]=list_experiment_path_ephy
+            
+            list_experiment_path_behaviour = [glob.glob(os.path.join(mice_path, experiment_type))for mice_path in list_mice_path_behaviour]
+            list_experiment_path_behaviour= [item for sublist in list_experiment_path_behaviour for item in sublist]
+            dic['list_experiment_path_behaviour']=list_experiment_path_behaviour
     
-    list_mice_path_behaviour = [glob.glob(os.path.join(group_path, mice_nb))for group_path in list_group_path_behaviour]
-    list_mice_path_behaviour = [item for sublist in list_mice_path_behaviour for item in sublist]
-    
-    list_mice = [os.path.basename(mice)for mice in list_mice_path_behaviour]
-    
-    """
-    #in thoses folders we load all the folder with th name experiment_type
-    if experiment_type == '*Training':
-        list_experiment_path_ephy = [glob.glob(os.path.join(mice_path, experiment_type))for mice_path in list_mice_path_ephy]
-        list_experiment_path_ephy = [item for sublist in list_experiment_path_ephy for item in sublist]"""
-    
-
-    list_experiment_path_ephy = [glob.glob(os.path.join(mice_path+'/Experiment', experiment_type))for mice_path in list_mice_path_ephy]
-    list_experiment_path_ephy = [item for sublist in list_experiment_path_ephy for item in sublist]
-    
-    list_experiment_path_behaviour = [glob.glob(os.path.join(mice_path, experiment_type))for mice_path in list_mice_path_behaviour]
-    list_experiment_path_behaviour= [item for sublist in list_experiment_path_behaviour for item in sublist]
-    
-    #in thoses folders we load all the folder with th name protocol_type
-    list_protocol_path_ephy = [glob.glob(os.path.join(experiment_path, protocol_type))for experiment_path in list_experiment_path_ephy]
-    list_protocol_path_ephy = [item for sublist in list_protocol_path_ephy for item in sublist]
-    
-    list_protocol_path_behaviour = [glob.glob(os.path.join(experiment_path, protocol_type))for experiment_path in list_experiment_path_behaviour]
-    list_protocol_path_behaviour = [item for sublist in list_protocol_path_behaviour for item in sublist]
-    
-    list_condition_path_ephy = [glob.glob(os.path.join(protocol_path, condition_type))for protocol_path in list_protocol_path_ephy]
-    list_condition_path_ephy = [item for sublist in list_condition_path_ephy for item in sublist]
-
-    
-    list_protocol = [os.path.basename(protocol)for protocol in list_protocol_path_behaviour]
-    
-    
-    list_condition = ['Stim', 'No Stim']
+            if experiment_type!='*':
+                #in thoses folders we load all the folder with th name protocol_type
+                list_protocol_path_ephy = [glob.glob(os.path.join(experiment_path, protocol_type))for experiment_path in list_experiment_path_ephy]
+                list_protocol_path_ephy = [item for sublist in list_protocol_path_ephy for item in sublist]
+                dic['list_protocol_path_ephy']=list_protocol_path_ephy
                 
-    dic = {"list_group_path_ephy": list_group_path_ephy,
-           "list_group_path_behaviour": list_group_path_behaviour,
-           "list_group": list_group,
-           "list_mice_path_ephy": list_mice_path_ephy,
-           "list_mice_path_behaviour": list_mice_path_behaviour,
-           "list_mice": list_mice,
-           "list_experiment_path_ephy": list_experiment_path_ephy,
-           "list_experiment_path_behaviour": list_experiment_path_behaviour,
-           "list_protocol_path_ephy": list_protocol_path_ephy,
-           "list_protocol_path_behaviour": list_protocol_path_behaviour,
-           "list_protocol":list_protocol,
-           "list_condition_path_ephy":list_condition_path_ephy,
-           "list_condition":list_condition}
+                list_protocol_path_behaviour = [glob.glob(os.path.join(experiment_path, protocol_type))for experiment_path in list_experiment_path_behaviour]
+                list_protocol_path_behaviour = [item for sublist in list_protocol_path_behaviour for item in sublist]
+                dic['list_protocol_path_behaviour']=list_protocol_path_behaviour
+                
+                list_protocol = [os.path.basename(protocol)for protocol in list_protocol_path_ephy]
+                dic['list_protocol']=list_protocol
+    
+                if protocol_type !='*':
+                    list_condition_path_ephy = [glob.glob(os.path.join(protocol_path, condition_type))for protocol_path in list_protocol_path_ephy]
+                    list_condition_path_ephy = [item for sublist in list_condition_path_ephy for item in sublist]
+                    dic['list_condition_path_ephy']=list_condition_path_ephy
+
     return dic
 
-def random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, protocol_type, condition_type, bandpass_dic, shank_dic):
+def random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, expermiment_type, protocol_type, condition_type, bandpass_dic, shank_dic):
     
-    v = B.load_lickfile(path_ephy_dic['lick_path'])
+    v = B.load_lickfile(path_ephy_dic['wheel_path'], wheel=True)
     random_delay=B.extract_random_delay(path_ephy_dic['param_path'], skip_last=True)
     random, lick_by_delay = B.separate_by_delay(random_delay, v)
-    random_choice = 'Random Delay'
+    random_choice = expermiment_type
     
     #Import all the files, by creating a list of them
     protocol_path =  path_ephy_dic['protocol_path']
     
-    stim_dir = fr'{protocol_path}/Stim'
-    stim_names = og.file_list(stim_dir,True,'.rbf')
+    if random_choice == 'Random Delay':
+        stim_dir = fr'{protocol_path}/Stim'
+        stim_names = og.file_list(stim_dir,True,'.rbf')
     
     nostim_dir = fr'{protocol_path}/No Stim'
     nostim_names = og.file_list(nostim_dir,True,'.rbf')
-     
+
+    
     signals_by_delay = {}
     for k in random.keys():
         if dic_time[k]:
@@ -198,24 +191,27 @@ def random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, protocol_type, cond
             signals_by_delay[k]['Early_Stim'] = []
             signals_by_delay[k]['Late_Stim'] = []
             for idx, file in enumerate(nostim_names):
-    
                 #Location of the file
                 nostim_path =os.path.normpath(fr'{nostim_dir}/{file}.rbf')
-                
-                try: # To avoid the crash in case there are less Stim files than NoStim
-                    stim_path =fr'{stim_dir}/{stim_names[idx]}.rbf'
-                except:
-                    continue
+                if random_choice == 'Random Delay':
+                    try: # To avoid the crash in case there are less Stim files than NoStim and when training there is no Stim
+                        stim_path =fr'{stim_dir}/{stim_names[idx]}.rbf'
+                    except:
+                        continue
                 #Divide by delay and channel group
                 for x in random[k]:
-                    if idx+1 == x[1]:
-                            signals_by_delay[k]['NoStim'].append(nostim_path)
-                    elif idx+31 == x[1]:
-                        if idx<10:
-                            signals_by_delay[k]['Early_Stim'].append(stim_path)
-    
-                        elif idx>=10:
-                            signals_by_delay[k]['Late_Stim'].append(stim_path)
+                    if random_choice == 'Training':
+                        if idx+1 == x[1]:
+                            signals_by_delay[k]['No Stim'].append(nostim_path)
+                    else:
+                        if idx+1 == x[1]:
+                                signals_by_delay[k]['NoStim'].append(nostim_path)
+                        elif idx+31 == x[1]:
+                            if idx<10:
+                                signals_by_delay[k]['Early_Stim'].append(stim_path)
+        
+                            elif idx>=10:
+                                signals_by_delay[k]['Late_Stim'].append(stim_path)
                 list_files = []
                 if condition_type == 'No Stim':
                     for value in signals_by_delay[k]['NoStim']:
@@ -226,7 +222,6 @@ def random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, protocol_type, cond
                         list_files.append(os.path.basename(value))
                     for value in signals_by_delay[k]['Late_Stim']:
                         list_files.append(os.path.basename(value))
-            
             reward_time =  k
             ephy_plot(path_ephy_dic, graph_dic, mice_nb, protocol_type, condition_type, bandpass_dic, shank_dic, random_choice, list_files, reward_time)
 
@@ -703,11 +698,11 @@ if __name__ == '__main__' :
 
     
     #wheel speed
-    v = B.load_lickfile("C:/Users/Master5.INCI-NSN/Desktop/Pierre/data/Behaviour/Group 15/173/Random Delay/P13/173_2020_07_26_11_15_45.lick")
-    random_delay=B.extract_random_delay("C:/Users/Master5.INCI-NSN/Desktop/Pierre/data/Behaviour/Group 15/173/Random Delay/P13/173_2020_07_26_11_15_45.param")
+    v = B.load_lickfile("\\equipe2-nas1\F.LARENO-FACCINI\BACKUP FEDE\Behaviour\Group 15\176 (CM16-Buz - Female)\Training\T8-2\176_2020_07_24_15_24_44.coder", wheel=True)
+    random_delay=B.extract_random_delay("C:/Users/Master5.INCI-NSN/Desktop/Pierre/data/Behaviour/Group 15/176 F/Random Delay/P16/176_2020_07_26_14_52_13.param")
     delays, wheel_by_delay = B.separate_by_delay(random_delay, v) 
 
-
+""""
     wheel_data = wheel_speed(wheel_by_delay['400'])        
     plt.plot(wheel_data[:,0], wheel_data[:,1])
     
@@ -719,8 +714,9 @@ if __name__ == '__main__' :
     plt.axvspan(1.5,2, facecolor="green", alpha=0.3)
     plt.axvspan(2.55,2.7, facecolor="red", alpha=0.3)
     plt.show()
-    """
-
+"""
+    
+"""
     #path finder
     group_nb = '15'
     mice_nb = '173'

@@ -8,7 +8,7 @@ import PySimpleGUI as sg
 import matplotlib.pyplot as plt
 import extrapy.Behaviour as B
 import numpy as np
-import GUI_function_working as gf
+import GUI_function as gf
 import glob
 import os
 

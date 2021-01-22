@@ -72,7 +72,6 @@ def wheel_speed (wheel, condition_type='No Stim'):
                 if time <= i:
                     ### If we are using the median, we can avoid this further removal of outliers
                     # if speed > 150:
-                    #     #print (cle, time, speed)
                     #     break # i remove the value that are above 1.5 meter/sec
                     append_value(sampling_dic, i, speed)
                     break
@@ -166,12 +165,10 @@ def path_finder(main_folder_path, group_nb = '', mice_nb = '', experiment_type =
     return dic
 
 def random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, expermiment_type, protocol_type, condition_type, bandpass_dic, shank_dic):
-    
     v = B.load_lickfile(path_ephy_dic['wheel_path'], wheel=True)
     random_delay=B.extract_random_delay(path_ephy_dic['param_path'], skip_last=True)
     random, lick_by_delay = B.separate_by_delay(random_delay, v)
     random_choice = expermiment_type
-    
     #Import all the files, by creating a list of them
     protocol_path =  path_ephy_dic['protocol_path']
     
@@ -182,7 +179,6 @@ def random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, expermiment_type, p
     nostim_dir = fr'{protocol_path}/No Stim'
     nostim_names = og.file_list(nostim_dir,True,'.rbf')
 
-    
     signals_by_delay = {}
     for k in random.keys():
         if dic_time[k]:
@@ -200,9 +196,9 @@ def random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, expermiment_type, p
                         continue
                 #Divide by delay and channel group
                 for x in random[k]:
-                    if random_choice == 'Training':
+                    if condition_type == 'all':
                         if idx+1 == x[1]:
-                            signals_by_delay[k]['No Stim'].append(nostim_path)
+                            signals_by_delay[k]['NoStim'].append(nostim_path)
                     else:
                         if idx+1 == x[1]:
                                 signals_by_delay[k]['NoStim'].append(nostim_path)
@@ -212,15 +208,14 @@ def random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, expermiment_type, p
         
                             elif idx>=10:
                                 signals_by_delay[k]['Late_Stim'].append(stim_path)
-                list_files = []
-                if condition_type == 'No Stim':
-                    for value in signals_by_delay[k]['NoStim']:
-                        list_files.append(os.path.basename(value))
-                
+                list_files = []  
                 if condition_type == 'Stim':
                     for value in signals_by_delay[k]['Early_Stim']:
                         list_files.append(os.path.basename(value))
                     for value in signals_by_delay[k]['Late_Stim']:
+                        list_files.append(os.path.basename(value))
+                else:
+                    for value in signals_by_delay[k]['NoStim']:
                         list_files.append(os.path.basename(value))
             reward_time =  k
             ephy_plot(path_ephy_dic, graph_dic, mice_nb, protocol_type, condition_type, bandpass_dic, shank_dic, random_choice, list_files, reward_time)
@@ -562,7 +557,6 @@ def ephy_plot(path_ephy_dic, graph_dic, mice_nb, protocol_type, condition_type, 
             axes.axvspan(current_reward_time,current_reward_time+0.15, facecolor="red", alpha=0.3) 
 
 def ephy_plot_average(axes, mean, chanel, shank_dic):       
-    #print(mean['time'])
     axes.plot(mean['time'], mean[fr'Mean of Ch_group {chanel}']) 
     axes.set_title(fr'Ch group {chanel}: whole session average')
     if  shank_dic['both'] and chanel ==1: 

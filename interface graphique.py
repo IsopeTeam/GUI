@@ -71,19 +71,21 @@ def plot_maker(lick_data, title, reward_time, raster, PSTH, wheel, wheel_data):
         axes.axvspan(current_reward_time,current_reward_time+0.15, facecolor="red", alpha=0.3) 
 
 def graphique_fixe(lick_file_path, raster, PSTH, wheel, wheel_path, condition_type):
-    
-    if condition_type == 'No Stim':
-        nb_trials= [1,30]
-        nb_trials_use=30
-    elif condition_type == 'Stim':
-        nb_trials= [31,60]
-        nb_trials_use=30
-    else:
-        nb_trials=[1, 60]
-        nb_trials_use=60
-        
+
+
     if raster or PSTH:
         lick_data_temp = B.load_lickfile(lick_file_path)
+        if condition_type == 'No Stim':
+            nb_trials= [1,30]
+            nb_trials_use=30
+        elif condition_type == 'Stim':
+            nb_trials= [31,60]
+            nb_trials_use=30
+        else:
+            last_trial_nb = lick_data_temp[:,0]
+            nb_trials=[1, int(last_trial_nb[-1])]
+            nb_trials_use=nb_trials[1]
+        
         index_list= []
         for i in range(nb_trials[0],nb_trials[1]+1): 
             index = np.where(lick_data_temp[:,0] == i)
@@ -116,17 +118,19 @@ def graphique_random(param_file_path, lick_file_path, dic_graph_choice, raster, 
         delays, licks_by_delay = B.separate_by_delay(random_delay, lick)
     else:
         lick_data = None
-        
     for cle in delays.keys():
         if dic_graph_choice[cle]: 
             
+            """
+            change here for late/early stim
+            """
             if condition_type == 'No Stim':
                 nb_trials= [1,30]                
             elif condition_type == 'Stim':
                 nb_trials= [31,60]
             else:
-                nb_trials=[1, 60]
-            
+                last_trial_nb = lick[:,0]
+                nb_trials=[1, int(last_trial_nb[-1])]
             if wheel:
                 wheel_data, _ = gf.wheel_speed(wheel_by_delay[cle], condition_type)
 
@@ -139,7 +143,6 @@ def graphique_random(param_file_path, lick_file_path, dic_graph_choice, raster, 
                     for i in index[0]:
                         index_list.append(i)                                     
                 lick_data = np.array([[lick_data_temp[i,0],lick_data_temp[i,1]] for i in index_list])
-                
             index_trial_nb_list= []
             for i in range(nb_trials[0],nb_trials[1]+1):
                 index_trial_nb = np.where(delays[cle][:,1] ==i)
@@ -181,7 +184,7 @@ columnB = [[sg.Frame(layout=[[sg.Radio('Chanel 0','radio_shank', key='Ch_group0'
             [sg.Text('high frequency :'), sg.Spin(values=list(range(0,40000,1)), initial_value=30,key='freq_high', size=(10,1))], 
             [sg.Text('low frequency  :'), sg.Spin(values=list(range(0,40000,1)), initial_value=0,key='freq_low', size=(10,1))],
             [sg.Text('Sample rate    :'), sg.Spin(values=list(range(0,40000,1)), initial_value=20000,key='sample_rate', size=(10,1))]] 
-            ,title='Bandpass filter', title_color='red', relief=sg.RELIEF_SUNKEN, tooltip='Even if the bandpass filter is off the value is use for de ridge line')]]
+            ,title='Bandpass filter', title_color='red', relief=sg.RELIEF_SUNKEN, tooltip='Even if the bandpass filter is off the values are use for de ridge line')]]
   
 
   
@@ -316,7 +319,7 @@ while True:
             expermiment_type = 'Training'
             protocol_type = ''
             window.Element('protocole').Update(protocol_type)
-            condition_type = 'No Stim'
+            condition_type = ''
             window.Element('condition').Update(condition_type)
             
             path_dic = gf.path_finder(values['main_folder'], group_nb, mice_nb, expermiment_type, protocol_type, condition_type)
@@ -333,6 +336,14 @@ while True:
             protocol_type = values['protocole']
             
             path_dic = gf.path_finder(values['main_folder'], group_nb, mice_nb, expermiment_type, protocol_type, condition_type)
+            
+            if protocol_type == 'NB' or protocol_type == 'P0' or expermiment_type == 'Training':
+                condition = ['No Stim']
+                window.FindElement('condition').Update(values=condition)
+            
+            else:
+                condition = list_condition
+                window.FindElement('condition').Update(values=condition)
 
         
         if event == 'condition':
@@ -355,17 +366,21 @@ while True:
             param_path = os.path.normpath(param_path[0])
             coder_path = os.path.normpath(coder_path[0])
             
-            if values['radio_random']:   #If we chose to random delay
+            if values['radio_random'] or values['radio_training']:   #If we chose to random delay
+                if values['radio_training'] or values['protocole']== 'NB' or values['protocole']== 'P0':
+                    condition_type= 'all'
+                    
                 dic_graph_choice_time = {"400":values['400'],"400_400":values['400_400'],"900_400":values['400_400'],\
                                                 "400_400_400":values['400_400_400'],"900_400_400":values['900_400_400'],"900":values['900'],\
                                                 "900_900":values['900_900'],"400_900":values['400_900'],"900_900_900":values['900_900_900'],"400_900_900":values['400_900_900']}
-                
                 graphique_random(param_path, lick_path, dic_graph_choice_time, values['display_raster'],values['display_PSTH'], \
                                  values['display_wheel'], coder_path, mice_nb, protocol_type, condition_type)
 
   
     
             if values['radio_fixe']:   #if we chose fixe delay
+                if values['protocole']== 'NB' or values['protocole']== 'P0':
+                    condition_type = 'all'
                 graphique_fixe(lick_path, values['display_raster'],values['display_PSTH'], values['display_wheel'], coder_path, condition_type)
         
     #electrophy plotting
@@ -377,14 +392,20 @@ while True:
             path_ephy_dic = {'protocol_path' : os.path.normpath(path_dic['list_protocol_path_ephy'][0]), 'condition_path' : os.path.normpath(path_dic['list_condition_path_ephy'][0])}
             
             if values['radio_random'] or values['radio_training']:
+                if values['radio_training'] or values['protocole']== 'NB' or values['protocole']== 'P0':
+                    condition_type = 'all'
+                print(0)    
                 dic_time = {"400":values['400'],"400_400":values['400_400'],"900_400":values['400_400'],"400_400_400":values['400_400_400'],"900_400_400":values['900_400_400'],"900":values['900'],"900_900":values['900_900'],"400_900":values['400_900'],"900_900_900":values['900_900_900'],"400_900_900":values['400_900_900']}
                 
                 lick_path=glob.glob(os.path.join(path_dic['list_protocol_path_behaviour'][0], '*.coder'))
                 param_path=glob.glob(os.path.join(path_dic['list_protocol_path_behaviour'][0], '*.param'))
                 path_ephy_dic['wheel_path'] = os.path.normpath(lick_path[0])
                 path_ephy_dic['param_path'] = os.path.normpath(param_path[0])
+                print(1)
                 gf.random_ephy(path_ephy_dic, graph_dic, dic_time, mice_nb, expermiment_type, protocol_type, condition_type, bandpass_dic, shank_dic)
             if values['radio_fixe']:
+                if values['protocole']== 'NB' or values['protocole']== 'P0':
+                    condition_type = 'all'
                 gf.ephy_plot(path_ephy_dic, graph_dic, mice_nb, protocol_type, condition_type, bandpass_dic, shank_dic)
 
 

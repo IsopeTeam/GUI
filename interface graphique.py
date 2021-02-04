@@ -520,6 +520,7 @@ while True:
             
             
             window_trial_update(values['ws_average'])
+            window_tag_update()
         
         if event == '400' or event == '400_400' or event == '900_400' or event == '900_400' or event == '400_400_400' or event == '900_400_400' or event == '900'or event == '900_900'or event == '400_900'or event == '900_900_900'or event == '400_900_900':
             dic_graph_choice_time = {"400":values['400'],"400_400":values['400_400'],"900_400":values['900_400'],"400_400_400":values['400_400_400'],
@@ -551,7 +552,7 @@ while True:
                     plot_master()
             
                 window_trial_update(values['ws_average'])
-                
+                window_tag_update()                
         
         if event=='previous':
             if values['trial_by_trial']:

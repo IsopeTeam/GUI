@@ -225,8 +225,9 @@ def window_cbox_list(location=(650,0)):
     for i, value in trial_dic[current_time_displayed]['trial_dic_choice'].items():
         cbox_list.append([sg.Checkbox(f'Trial nb: {i}', default=value, enable_events=True, key=i)])
     
-    layout = [[sg.Column(cbox_list, size=(195, 500), scrollable=True,  vertical_scroll_only=True)], 
-              [sg.Button('Update', key= 'update'), sg.Button('Select all', key='select_all'), sg.Button('Deselect all', key='deselect_all')]] 
+    layout = [[sg.Column(cbox_list, size=(235, 500), scrollable=True,  vertical_scroll_only=True)], 
+              [sg.Button('Update', key= 'update'), sg.Button('Select all', key='select_all'), sg.Button('Deselect all', key='deselect_all')],
+              [sg.Button('Select taged trials', key= 'select_taged_update'),sg.Button('Deselect taged trials', key= 'deselect_taged_update')]] 
     
     return sg.Window(fr'{current_time_displayed}ms', layout, location = location, finalize=True)
 
@@ -259,8 +260,9 @@ def window_trial_update(average):
 
 
 def window_tag_list_maker(location=(650,0)):
-    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
-
+    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
+    
     treedata = sg.TreeData()
     if os.path.exists('taged_trials.txt'):
         with open ('taged_trials.txt', 'rb') as tag_trials_file:
@@ -530,6 +532,7 @@ while True:
             if condition_type !='':
                 trial_dic = trial_list_maker (path_behav_dic, condition_type, dic_graph_choice_time)
                 window_trial_update(values['ws_average'])
+                window_tag_update()
         
         if event =='ws_average' or event == 'trial_by_trial':
             window_trial_update(values['ws_average'])
@@ -552,7 +555,7 @@ while True:
                     plot_master()
             
                 window_trial_update(values['ws_average'])
-                window_tag_update()                
+                
         
         if event=='previous':
             if values['trial_by_trial']:
@@ -574,7 +577,8 @@ while True:
         if event=='tag':
             if values['trial_by_trial']:
                 if 'choice' in globals():
-                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
@@ -584,7 +588,12 @@ while True:
                     
                     if trial_dic['list_time_display'][graph_displayed] not in tag_trials_dic:
                         tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]=[]
-                    tag_trials_dic[trial_dic['list_time_display'][graph_displayed]].append(list_trial[trial_displayed])
+                        
+                    if list_trial[trial_displayed] not in tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]:
+                        tag_trials_dic[trial_dic['list_time_display'][graph_displayed]].append(list_trial[trial_displayed])
+                    
+                    else:
+                        pass
                     
                     with open ('taged_trials.txt', 'wb') as tag_trials_file:
                         my_pickler = pickle.Pickler(tag_trials_file)
@@ -598,7 +607,8 @@ while True:
         if event=='untag':
             if values['trial_by_trial']:
                 if 'choice' in globals():
-                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
@@ -661,6 +671,38 @@ while True:
                 graph_choice_behav_dic = {'raster': True, 'PSTH': True, 'wheel': True, 'ws_average': False}
                 main_window.FindElement('trial_by_trial').Update(True)
             plot_master()
+        
+        if event=='select_taged_update':
+            os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
+            if os.path.exists('taged_trials.txt'):
+                with open ('taged_trials.txt', 'rb') as tag_trials_file:
+                    my_depickler = pickle.Unpickler(tag_trials_file)
+                    tag_trials_dic = my_depickler.load()
+                
+                for i in values.keys():
+                    if i in tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]:
+                        trial_selection_window.FindElement(i).Update(True)
+                    else:
+                        trial_selection_window.FindElement(i).Update(False)
+            else:
+                for i in values.keys():
+                    trial_selection_window.FindElement(i).Update(False)
+                    
+        if event=='deselect_taged_update':
+            os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
+            if os.path.exists('taged_trials.txt'):
+                with open ('taged_trials.txt', 'rb') as tag_trials_file:
+                    my_depickler = pickle.Unpickler(tag_trials_file)
+                    tag_trials_dic = my_depickler.load()
+                
+                for i in values.keys():
+                    if i in tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]:
+                        trial_selection_window.FindElement(i).Update(False)
+                    else:
+                        trial_selection_window.FindElement(i).Update(True)
+            else:
+                for i in values.keys():
+                    trial_selection_window.FindElement(i).Update(True)
                 
     #behaviour plotting
         if event == '-behaviour plot-' or event == '-behaviour plot new fig-':

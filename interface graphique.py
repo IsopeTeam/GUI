@@ -259,7 +259,7 @@ def window_trial_update(average):
 
 
 def window_tag_list_maker(location=(650,0)):
-    os.chdir(os.path.dirname(path_behav_dic['lick']))
+    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
 
     treedata = sg.TreeData()
     if os.path.exists('taged_trials.txt'):
@@ -573,7 +573,7 @@ while True:
         if event=='tag':
             if values['trial_by_trial']:
                 if 'choice' in globals():
-                    os.chdir(os.path.dirname(path_behav_dic['lick']))
+                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
@@ -597,7 +597,7 @@ while True:
         if event=='untag':
             if values['trial_by_trial']:
                 if 'choice' in globals():
-                    os.chdir(os.path.dirname(path_behav_dic['lick']))
+                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)

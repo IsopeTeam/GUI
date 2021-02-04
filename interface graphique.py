@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 import extrapy.Behaviour as B
 import extrapy.Organize as og
 import numpy as np
-import GUI_function as gf
+import GUI_function_working as gf
 import glob
 import os
-
+import pickle
 
 def plot_maker(lick_data, title, reward_time, graph_choice_behav_dic, wheel_data, new_fig):
 
@@ -236,15 +236,15 @@ def window_trial_by_trial(location=(650,0)):
     if experiment_type != 'Fixed Delay':
         time_list= [i for i in trial_dic['list_time_display']]
     else:
-        time_list=[500]
+        time_list=['500']
     
     for idx, time in enumerate(time_list):
         treedata.insert('', key=idx,text=time, values=[])
         for trial in enumerate(trial_dic[time]['list_trial_display']):
            treedata.insert(idx, key=(idx,trial[0]),text=fr'Trial {trial[1]}', values=[])
     
-        layout = [[sg.Tree(data=treedata, headings=[], auto_size_columns=True, num_rows=15, col0_width=25, row_height=25, key='-TREE-', show_expanded=False, enable_events=True)],
-          [sg.Button('Go to trial', key='go')]]    
+    layout = [[sg.Tree(data=treedata, headings=[], auto_size_columns=True, num_rows=15, col0_width=25, row_height=25, key='-TREE-', show_expanded=False, enable_events=True)],
+          [sg.Button('Go to trial', key='go_trial')]]    
     return sg.Window('Trial selection', layout, location = location, finalize=True)
 
 def window_trial_update(average):
@@ -256,6 +256,33 @@ def window_trial_update(average):
             trial_selection_window = window_cbox_list(location)
         else:
             trial_selection_window = window_trial_by_trial(location)
+
+
+def window_tag_list_maker(location=(650,0)):
+    #os.chdir(os.path.dirname(path_behav_dic['lick']))
+    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
+    
+    treedata = sg.TreeData()
+    if os.path.exists('taged_trials.txt'):
+        with open ('taged_trials.txt', 'rb') as tag_trials_file:
+            my_depickler = pickle.Unpickler(tag_trials_file)
+            tag_trials_dic = my_depickler.load()
+            
+        for time, trial_list in tag_trials_dic.items():
+            treedata.insert('', key=time, text=time, values=[])
+            for trial in trial_list:
+               treedata.insert(time, key=(time, trial),text=fr'Trial {trial}', values=[])
+    
+    layout = [[sg.Tree(data=treedata, headings=[], auto_size_columns=True, num_rows=15, col0_width=25, row_height=25, key='-TREE-', show_expanded=False, enable_events=True)],
+          [sg.Button('Go to trial', key='go_tag')]]    
+    return sg.Window('Tag trials', layout, location = location, finalize=True)
+
+def window_tag_update():
+    global window_tag_list
+    if window_tag_list:
+        location = window_tag_list.CurrentLocation()
+        window_tag_list.close()
+        window_tag_list = window_tag_list_maker(location)
 
 def main_window():
     
@@ -306,8 +333,9 @@ def main_window():
                 [sg.pin(sg.Column(random_section, key='random_section'))],            
                 [sg.Text('Select protocole   '), sg.InputCombo(values=[], size=(20, 1), key='protocole', enable_events=True)],
                 [sg.Text('Select condition   '), sg.InputCombo(values=[], size=(20, 1), key='condition', enable_events=True)],
-                [sg.Button('Clear plot', key='-clear plot-', button_color=('red','white')), sg.Button('Trial list', key='-trial list-'), sg.Radio('All session average', 'radio_session', key='ws_average', default=True, enable_events=True), sg.Radio('Trial by trial','radio_session',key='trail_by_trial', default=False, enable_events=True)],
-                [sg.Button('previous trace',  key='previous'), sg.Button('next trace', key= 'next')],
+                [ sg.Button('Tag list', key='-tag list-'), sg.Button('Trial list', key='-trial list-'), sg.Radio('All session average', 'radio_session', key='ws_average', default=True, enable_events=True), sg.Radio('Trial by trial','radio_session',key='trial_by_trial', default=False, enable_events=True)],
+                [sg.Button('previous trace',  key='previous'), sg.Button('next trace', key= 'next'), sg.Button('Tag',  key='tag'), sg.Button('Untag', key= 'untag')],
+                [sg.Button('Clear plot', key='-clear plot-', button_color=('red','white'))],
                 #Behaviour
                 [sg.Text('_'  * 80)], [sg.Text('Behaviour', size=(30, 1), justification='center', font=("Helvetica", 13), relief=sg.RELIEF_RIDGE)], 
                 [sg.Frame(layout=[      
@@ -329,7 +357,7 @@ def main_window():
 
 fig = plt.figure(0)
 fig.canvas.set_window_title('Main Figure')
-ax = fig.subplots(1)
+fig.subplots(1)
 group_nb = ''
 mice_nb = ''
 
@@ -341,7 +369,7 @@ list_condition = ['No Stim', 'Stim']
 dic_graph_choice_time = {"400":True,"400_400":False,"900_400":False,"400_400_400":False,"900_400_400":False,"900":True,"900_900":False,"400_900":False,"900_900_900":False,"400_900_900":False}
 sg.theme('DarkBlue')
 
-main_window, trial_selection_window = main_window(), None        # start off with 1 window open
+main_window, trial_selection_window,  window_tag_list = main_window(), None, None        # start off with 1 window open
 
 while True:
     window, event, values = sg.read_all_windows()
@@ -351,6 +379,8 @@ while True:
             window.close()
             if window == trial_selection_window:
                 trial_selection_window = None
+            elif window == window_tag_list:
+                window_tag_list = None
             elif window == main_window:
                 break
         
@@ -500,9 +530,12 @@ while True:
             if condition_type !='':
                 trial_dic = trial_list_maker (path_behav_dic, condition_type, dic_graph_choice_time)
                 window_trial_update(values['ws_average'])
+        
+        if event =='ws_average' or event == 'trial_by_trial':
+            window_trial_update(values['ws_average'])
 
         if event=='next': 
-            if values['trail_by_trial']:
+            if values['trial_by_trial']:
                 if trial_displayed+1 < len(list_trial):
                     trial_displayed +=1
                     plot_master()
@@ -522,7 +555,7 @@ while True:
                 
         
         if event=='previous':
-            if values['trail_by_trial']:
+            if values['trial_by_trial']:
                 if trial_displayed > 0:
                     trial_displayed -=1
                     plot_master()     
@@ -538,12 +571,72 @@ while True:
                 
                 window_trial_update(values['ws_average'])
         
-        if event =='ws_average' or event == 'trail_by_trial':
-            window_trial_update(values['ws_average'])
+        if event=='tag':
+            if values['trial_by_trial']:
+                if 'choice' in globals():
+                    #os.chdir(os.path.dirname(path_behav_dic['lick']))
+                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
+                    if os.path.exists('taged_trials.txt'):
+                        with open ('taged_trials.txt', 'rb') as tag_trials_file:
+                            my_depickler = pickle.Unpickler(tag_trials_file)
+                            tag_trials_dic = my_depickler.load()
+                    else:
+                        tag_trials_dic = {}
+                    
+                    if trial_dic['list_time_display'][graph_displayed] not in tag_trials_dic:
+                        tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]=[]
+                    tag_trials_dic[trial_dic['list_time_display'][graph_displayed]].append(list_trial[trial_displayed])
+                    
+                    with open ('taged_trials.txt', 'wb') as tag_trials_file:
+                        my_pickler = pickle.Pickler(tag_trials_file)
+                        my_pickler.dump(tag_trials_dic)
+                    
+                    window_tag_update()
+
+    # trial_dic['list_time_display'][graph_displayed] = curent time display (i dont want it to be global)
+    # list_trial[trial_displayed] = current trial display  (i dont want it to be global)  
+
+        if event=='untag':
+            if values['trial_by_trial']:
+                if 'choice' in globals():
+                    #os.chdir(os.path.dirname(path_behav_dic['lick']))
+                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
+                    if os.path.exists('taged_trials.txt'):
+                        with open ('taged_trials.txt', 'rb') as tag_trials_file:
+                            my_depickler = pickle.Unpickler(tag_trials_file)
+                            tag_trials_dic = my_depickler.load()
+                        
+                        if trial_dic['list_time_display'][graph_displayed] in tag_trials_dic:
+                            if list_trial[trial_displayed] in tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]:
+                                tag_trials_dic[trial_dic['list_time_display'][graph_displayed]].remove(list_trial[trial_displayed])
+                            
+                            if len(tag_trials_dic[trial_dic['list_time_display'][graph_displayed]])==0:
+                                del tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]
+                        
+                        with open ('taged_trials.txt', 'wb') as tag_trials_file:
+                            my_pickler = pickle.Pickler(tag_trials_file)
+                            my_pickler.dump(tag_trials_dic)
+                    
+                        window_tag_update()
+                                
+                    else:
+                        pass
+        
+        if event == '-tag list-':
+            window_tag_list = window_tag_list_maker()
+        
+        if event == 'go_tag':
+            graph_displayed = trial_dic['list_time_display'].index(values['-TREE-'][0][0])
+            trial_displayed = trial_dic[trial_dic['list_time_display'][graph_displayed]]['list_trial_display'].index(values['-TREE-'][0][1])
+            if not 'choice' in globals():
+                choice = 'behav'
+                graph_choice_behav_dic = {'raster': True, 'PSTH': True, 'wheel': True, 'ws_average': False}
+                main_window.FindElement('trial_by_trial').Update(True)
+            plot_master()
                 
     #trial_selection_window
         if event == '-trial list-' and not trial_selection_window:
-            if values['trail_by_trial']:
+            if values['trial_by_trial']:
                 trial_selection_window = window_trial_by_trial()
             else:
                 trial_selection_window = window_cbox_list()
@@ -562,11 +655,14 @@ while True:
             for i in values.keys():
                 trial_selection_window.FindElement(i).Update(False)
         
-        if event=='go':
+        if event=='go_trial':            
             trial_displayed = values['-TREE-'][0][1]
             graph_displayed = values['-TREE-'][0][0]
-            if 'choice' in globals():
-                plot_master()
+            if not 'choice' in globals():
+                choice = 'behav'
+                graph_choice_behav_dic = {'raster': True, 'PSTH': True, 'wheel': True, 'ws_average': False}
+                main_window.FindElement('trial_by_trial').Update(True)
+            plot_master()
                 
     #behaviour plotting
         if event == '-behaviour plot-' or event == '-behaviour plot new fig-':

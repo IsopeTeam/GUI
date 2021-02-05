@@ -1,4 +1,4 @@
-This folder contain the code for the GUI (interface graphique.py) as well as all the function need for it to run.
+This folder contain the code for the GUI (interface graphique.py) as well as all the function needed for it to run.
 
 For the moment the GUI work only with single file (we canont plot the result from multiple animal at the same time)
 

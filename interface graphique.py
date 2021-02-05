@@ -14,9 +14,9 @@ import glob
 import os
 import pickle
 
-def plot_maker(lick_data, title, reward_time, graph_choice_behav_dic, wheel_data, new_fig):
+def plot_maker(lick_data, title, reward_time, graph_dic, wheel_data, new_fig):
 
-    plot_nb = int(graph_choice_behav_dic['raster'])+int(graph_choice_behav_dic['PSTH'])+int(graph_choice_behav_dic['wheel'])
+    plot_nb = int(graph_dic['raster'])+int(graph_dic['PSTH'])+int(graph_dic['wheel'])
     if new_fig:
         fig_new = plt.figure(title)
         ax = fig_new.subplots(plot_nb, 1, sharex=True)
@@ -31,13 +31,13 @@ def plot_maker(lick_data, title, reward_time, graph_choice_behav_dic, wheel_data
         axes=ax
     elif plot_nb>1:
         axes=ax[plot_position]
-    if graph_choice_behav_dic['raster']:
+    if graph_dic['raster']:
         #first subplot (Raster)
         B.scatter_lick(lick_data, axes, x_label=None)
         axes.set_title('RASTER') #Raster subplot title
         plot_position +=1
     
-    if graph_choice_behav_dic['PSTH']:
+    if graph_dic['PSTH']:
         #second subplot (PSTH)
         if plot_nb >1:
             axes=ax[plot_position]
@@ -48,7 +48,7 @@ def plot_maker(lick_data, title, reward_time, graph_choice_behav_dic, wheel_data
         axes.set_title('PSTH') #PSTH y label
         plot_position +=1
     
-    if graph_choice_behav_dic['wheel']:
+    if graph_dic['wheel']:
         #second subplot (PSTH)
         if plot_nb >1:
             axes=ax[plot_position]
@@ -75,9 +75,9 @@ def plot_maker(lick_data, title, reward_time, graph_choice_behav_dic, wheel_data
     plt.draw()
     
 
-def graphique_behav(graph_choice_behav_dic, path_behav_dic, trial_dic, new_fig, current_time_displayed):
+def graphique_behav(graph_dic, path_behav_dic, trial_dic, new_fig, current_time_displayed):
     
-    if graph_choice_behav_dic['ws_average']:
+    if graph_dic['ws_average']:
         trial_dic_choice= trial_dic[current_time_displayed]['trial_dic_choice']
         trial_data = trial_dic[current_time_displayed]['trial_data']
         
@@ -98,7 +98,7 @@ def graphique_behav(graph_choice_behav_dic, path_behav_dic, trial_dic, new_fig, 
     
     reward_time = current_time_displayed[-3:]
             
-    if graph_choice_behav_dic['raster'] or graph_choice_behav_dic['PSTH']:
+    if graph_dic['raster'] or graph_dic['PSTH']:
         lick_data = np.empty((1,2))
         for i, value in trial_data.items():
             if trial_dic_choice[i]:
@@ -109,14 +109,14 @@ def graphique_behav(graph_choice_behav_dic, path_behav_dic, trial_dic, new_fig, 
     else:
         lick_data = None
         
-    if graph_choice_behav_dic['wheel']:
+    if graph_dic['wheel']:
         wheel_predata = B.load_lickfile(path_behav_dic['wheel'], wheel=True)
         wheel_data, _ = gf.wheel_speed(wheel_predata, trial_dic_choice)
     else:
         wheel_data = None
         
 
-    plot_maker(lick_data, title, reward_time, graph_choice_behav_dic, wheel_data, new_fig)
+    plot_maker(lick_data, title, reward_time, graph_dic, wheel_data, new_fig)
     
 def plot_master(new_fig=False, choice_temp=None):
     global fig
@@ -137,7 +137,7 @@ def plot_master(new_fig=False, choice_temp=None):
         
     
     if choice == 'behav' or choice_temp == 'behav': 
-        graphique_behav(graph_choice_behav_dic, path_behav_dic, trial_dic, new_fig, current_time_displayed)
+        graphique_behav(graph_dic, path_behav_dic, trial_dic, new_fig, current_time_displayed)
     
 
     elif choice == 'ephy_raw'or choice_temp == 'ephy_raw' or choice == 'ephy_time_frequency' or choice_temp == 'ephy_time_frequency':
@@ -172,49 +172,55 @@ def plot_master(new_fig=False, choice_temp=None):
     
     
 def trial_list_maker (path_behav_dic , condition_type, dic_graph_choice_time):
-    lick_data_temp = B.load_lickfile(path_behav_dic['lick'])
-
-    if condition_type == 'No Stim':
-        nb_trials= [1,30]
-    elif condition_type == 'Stim':
-        nb_trials= [31,60]
-    else:
-        last_trial_nb = lick_data_temp[:,0]
-        nb_trials=[1, int(last_trial_nb[-1])]
-        
-    if experiment_type == 'Fixed Delay': 
-        trial_dic ={}
-        trial_data ={}
-        for i in range(nb_trials[0],nb_trials[1]+1):
-            index = np.where(lick_data_temp[:,0] == i)
-            if index[0].size > 0:
-                trial_data[i]= np.array([[lick_data_temp[i,0],lick_data_temp[i,1]] for i in index[0]])
-        trial_dic_choice = {i: True for i in trial_data.keys()}
-        list_trial_display = [cle for cle, v in trial_dic_choice.items() if v]
-        trial_dic['500']= {'trial_data':trial_data, 'trial_dic_choice':trial_dic_choice, 'list_trial_display': list_trial_display}
-        trial_dic['list_time_display']=['500']
+    try:
+        lick_data_temp = B.load_lickfile(path_behav_dic['lick'])
+    except:
+        window.FindElement('protocole').Update('')
+        window.FindElement('condition').Update('')
+        sg.popup_error('Lick file is empty')
     
-    elif experiment_type=='Random Delay' or experiment_type == 'Training':
-        random_delay=B.extract_random_delay(path_behav_dic['param'])
-        delays, licks_by_delay = B.separate_by_delay(random_delay, lick_data_temp)
+    else:
+        if condition_type == 'No Stim':
+            nb_trials= [1,30]
+        elif condition_type == 'Stim':
+            nb_trials= [31,60]
+        else:
+            last_trial_nb = lick_data_temp[:,0]
+            nb_trials=[1, int(last_trial_nb[-1])]
+            
+        if experiment_type == 'Fixed Delay': 
+            trial_dic ={}
+            trial_data ={}
+            for i in range(nb_trials[0],nb_trials[1]+1):
+                index = np.where(lick_data_temp[:,0] == i)
+                if index[0].size > 0:
+                    trial_data[i]= np.array([[lick_data_temp[i,0],lick_data_temp[i,1]] for i in index[0]])
+            trial_dic_choice = {i: True for i in trial_data.keys()}
+            list_trial_display = [cle for cle, v in trial_dic_choice.items() if v]
+            trial_dic['500']= {'trial_data':trial_data, 'trial_dic_choice':trial_dic_choice, 'list_trial_display': list_trial_display}
+            trial_dic['list_time_display']=['500']
         
-        trial_dic = {}
-        for cle in delays.keys():
-            if dic_graph_choice_time[cle]:
-                trial_data ={}
-                for i in range(nb_trials[0],nb_trials[1]+1):
-                    index = np.where(licks_by_delay[cle][:,0] == i)
-                    if index[0].size > 0:
-                        trial_data[i]= np.array([[licks_by_delay[cle][i,0],licks_by_delay[cle][i,1]] for i in index[0]])
+        elif experiment_type=='Random Delay' or experiment_type == 'Training':
+            random_delay=B.extract_random_delay(path_behav_dic['param'])
+            delays, licks_by_delay = B.separate_by_delay(random_delay, lick_data_temp)
+            
+            trial_dic = {}
+            for cle in delays.keys():
+                if dic_graph_choice_time[cle]:
+                    trial_data ={}
+                    for i in range(nb_trials[0],nb_trials[1]+1):
+                        index = np.where(licks_by_delay[cle][:,0] == i)
+                        if index[0].size > 0:
+                            trial_data[i]= np.array([[licks_by_delay[cle][i,0],licks_by_delay[cle][i,1]] for i in index[0]])
+                     
+                    trial_dic_choice = {i: True for i in trial_data.keys()}
+                    list_trial_display = [cle for cle, v in trial_dic_choice.items() if v]
+                    trial_dic[cle]= {'trial_data':trial_data, 'trial_dic_choice':trial_dic_choice, 'list_trial_display':list_trial_display}
+            
+            list_time_display = [cle for cle in trial_dic.keys()]
+            trial_dic['list_time_display']=list_time_display
                  
-                trial_dic_choice = {i: True for i in trial_data.keys()}
-                list_trial_display = [cle for cle, v in trial_dic_choice.items() if v]
-                trial_dic[cle]= {'trial_data':trial_data, 'trial_dic_choice':trial_dic_choice, 'list_trial_display':list_trial_display}
-        
-        list_time_display = [cle for cle in trial_dic.keys()]
-        trial_dic['list_time_display']=list_time_display
-             
-    return trial_dic
+        return trial_dic
 
     
 def window_cbox_list(location=(650,0)): 
@@ -260,7 +266,8 @@ def window_trial_update(average):
 
 
 def window_tag_list_maker(location=(650,0)):
-    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
     
     treedata = sg.TreeData()
     if os.path.exists('taged_trials.txt'):
@@ -289,7 +296,7 @@ def main_window():
     rd_column1=[[sg.Checkbox('Raw data', default=True,key='raw_data')],[sg.Checkbox('Instantaneous phase', default=True, key='phase')]]
     
     rd_column2=[[sg.Frame(layout=[
-                [sg.Text('phase frequency (Hz):'), sg.Spin(values=list(range(0,40000,1)), initial_value=10, key='phase_freq', size=(5,1))]]
+                [sg.Text('phase frequency (Hz):'), sg.Spin(values=list(range(0,40000,1)), initial_value=4, key='phase_freq', size=(5,1))]]
                 ,title='Phase parameters', title_color='red', relief=sg.RELIEF_SUNKEN)]]
     
     #raw data
@@ -531,11 +538,10 @@ while True:
             if condition_type !='':
                 trial_dic = trial_list_maker (path_behav_dic, condition_type, dic_graph_choice_time)
                 window_trial_update(values['ws_average'])
-                window_tag_update()
         
         if event =='ws_average' or event == 'trial_by_trial':
-            window_trial_update(values['ws_average'])
-
+            window_trial_update(values['ws_average'])           
+            
         if event=='next': 
             if values['trial_by_trial']:
                 if trial_displayed+1 < len(list_trial):
@@ -543,8 +549,8 @@ while True:
                     plot_master()
                 
                 else:
-                    trial_displayed =0
-                    if graph_displayed+1 < len(trial_dic['list_time_display']):                       
+                    if graph_displayed+1 < len(trial_dic['list_time_display']):  
+                        trial_displayed =0
                         graph_displayed +=1
                         plot_master()
                     
@@ -562,9 +568,9 @@ while True:
                     trial_displayed -=1
                     plot_master()     
                 else:
-                    trial_displayed =0
                     if graph_displayed > 0:
                         graph_displayed -=1
+                        trial_displayed =len(trial_dic[trial_dic['list_time_display'][graph_displayed]]['list_trial_display'])-1 #this will give the nb of the last position of the trial list in order to display the last trial of the previous time
                         plot_master()
             else:
                 if graph_displayed > 0:
@@ -576,8 +582,8 @@ while True:
         if event=='tag':
             if values['trial_by_trial']:
                 if 'choice' in globals():
-                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
-                    
+                    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
@@ -606,8 +612,8 @@ while True:
         if event=='untag':
             if values['trial_by_trial']:
                 if 'choice' in globals():
-                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
-                    
+                    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
@@ -629,16 +635,26 @@ while True:
                     else:
                         pass
         
-        if event == '-tag list-':
+        if event == '-tag list-' and not window_tag_list:
             window_tag_list = window_tag_list_maker()
         
         if event == 'go_tag':
+            if not values['-TREE-'][0][0] in trial_dic['list_time_display']:    #if we want to dispkay a trial when we didn't selected the coresponding time (400_900 for exemple) we need to tick the corresponding checkbox as well as remaking the trial_dic in order to include the data of that time
+                main_window.FindElement(values['-TREE-'][0][0]).Update(True)
+                dic_graph_choice_time[values['-TREE-'][0][0]]=True
+                trial_dic = trial_list_maker (path_behav_dic, condition_type, dic_graph_choice_time)
+                window_trial_update(False) #we refresh the trial list if open because we had a time in it
+                
             graph_displayed = trial_dic['list_time_display'].index(values['-TREE-'][0][0])
             trial_displayed = trial_dic[trial_dic['list_time_display'][graph_displayed]]['list_trial_display'].index(values['-TREE-'][0][1])
             if not 'choice' in globals():
                 choice = 'behav'
-                graph_choice_behav_dic = {'raster': True, 'PSTH': True, 'wheel': True, 'ws_average': False}
+                graph_dic = {'raster': True, 'PSTH': True, 'wheel': True, 'ws_average': False}
                 main_window.FindElement('trial_by_trial').Update(True)
+            else:
+                if not graph_dic['ws_average']:
+                    graph_dic['ws_average']=True
+                
             plot_master()
                 
     #trial_selection_window
@@ -652,6 +668,8 @@ while True:
             trial_dic[trial_dic['list_time_display'][graph_displayed]]['trial_dic_choice'] = values
             trial_dic[trial_dic['list_time_display'][graph_displayed]]['list_trial_display'] = [cle for cle, v in values.items() if v]
             if 'choice' in globals():
+                if not graph_dic['ws_average']:
+                    graph_dic['ws_average']=True
                 plot_master()
         
         if event=='select_all':
@@ -667,8 +685,11 @@ while True:
             graph_displayed = values['-TREE-'][0][0]
             if not 'choice' in globals():
                 choice = 'behav'
-                graph_choice_behav_dic = {'raster': True, 'PSTH': True, 'wheel': True, 'ws_average': False}
+                graph_dic = {'raster': True, 'PSTH': True, 'wheel': True, 'ws_average': False}
                 main_window.FindElement('trial_by_trial').Update(True)
+            else:
+                if graph_dic['ws_average']:
+                    graph_dic['ws_average']=False
             plot_master()
         
         if event=='select_taged_update':
@@ -677,15 +698,16 @@ while True:
                 with open ('taged_trials.txt', 'rb') as tag_trials_file:
                     my_depickler = pickle.Unpickler(tag_trials_file)
                     tag_trials_dic = my_depickler.load()
-                
-                for i in values.keys():
-                    if i in tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]:
-                        trial_selection_window.FindElement(i).Update(True)
-                    else:
-                        trial_selection_window.FindElement(i).Update(False)
+                if trial_dic['list_time_display'][graph_displayed] in tag_trials_dic:   
+                    for i in values.keys():
+                        if i in tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]:
+                            trial_selection_window.FindElement(i).Update(True)
+                        else:
+                            trial_selection_window.FindElement(i).Update(False)
+                else:
+                    sg.popup_error('No tag trial found')
             else:
-                for i in values.keys():
-                    trial_selection_window.FindElement(i).Update(False)
+                sg.popup_error('No tag trial found')
                     
         if event=='deselect_taged_update':
             os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
@@ -694,20 +716,22 @@ while True:
                     my_depickler = pickle.Unpickler(tag_trials_file)
                     tag_trials_dic = my_depickler.load()
                 
-                for i in values.keys():
-                    if i in tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]:
-                        trial_selection_window.FindElement(i).Update(False)
-                    else:
-                        trial_selection_window.FindElement(i).Update(True)
+                if trial_dic['list_time_display'][graph_displayed] in tag_trials_dic: 
+                    for i in values.keys():
+                        if i in tag_trials_dic[trial_dic['list_time_display'][graph_displayed]]:
+                            trial_selection_window.FindElement(i).Update(False)
+                        else:
+                            trial_selection_window.FindElement(i).Update(True)
+                else:
+                    sg.popup_error('No tag trial found')
             else:
-                for i in values.keys():
-                    trial_selection_window.FindElement(i).Update(True)
+                sg.popup_error('No tag trial found')
                 
     #behaviour plotting
         if event == '-behaviour plot-' or event == '-behaviour plot new fig-':
             window_trial_update(values['ws_average'])
                 
-            graph_choice_behav_dic = {'raster': values['display_raster'], 'PSTH':values['display_PSTH'], 'wheel': values['display_wheel'], 'ws_average': values['ws_average']}
+            graph_dic = {'raster': values['display_raster'], 'PSTH':values['display_PSTH'], 'wheel': values['display_wheel'], 'ws_average': values['ws_average']}
             
             if event == '-behaviour plot-':
                 choice = 'behav'

@@ -520,7 +520,7 @@ def graph_ephy_time_frequency(ephy_data, graph_dic, shank_dic, rl_dic, fig, info
     if graph_dic['rl_intensity'] or graph_dic['rl_frequency']: #if we plot ridge we need to calculate those value 
         if chanel==0:
             ridge0,theta0,x0,y0 = scalo.ridge_line(ridge_map0[0],ridge_map0[1],t0=0,t1=9,f0=rl_dic['low'],f1=rl_dic['high'], rescale=True)
-            #ax[plot_position-1].plot(map_times0[:-1],y0,color='r')
+            #ax[plot_position-1].plot(map_times0[:-1],y0,color='r') if we want to plot the ridge line on amplitude or power map
         
         if chanel ==1 or shank_dic['both']: 
             ridge1,theta1,x1,y1 = scalo.ridge_line(ridge_map1[0],ridge_map1[1],t0=0,t1=9,f0=rl_dic['low'],f1=rl_dic['high'], rescale=True)
@@ -532,9 +532,9 @@ def graph_ephy_time_frequency(ephy_data, graph_dic, shank_dic, rl_dic, fig, info
             axes=ax[plot_position]
             
         if chanel ==0 :
-            ephy_plot_intensity(axes, map_times0[:-1], ridge0, chanel, shank_dic)
+            ephy_plot_intensity(axes, map_times0[:-1], ridge0, chanel, shank_dic, graph_dic['hm_power'])
         else:
-            ephy_plot_intensity(axes,map_times1[:-1], ridge1, chanel, shank_dic)
+            ephy_plot_intensity(axes,map_times1[:-1], ridge1, chanel, shank_dic, graph_dic['hm_power'])
                  
         if shank_dic['both']:#if we use both chanel
             chanel +=1
@@ -545,7 +545,7 @@ def graph_ephy_time_frequency(ephy_data, graph_dic, shank_dic, rl_dic, fig, info
                 plot_position +=1
                 axes = ax[plot_position] #when only amplitude plot we have 1 dimention
             
-            ephy_plot_intensity(axes, map_times1[:-1], ridge1, chanel, shank_dic)#axes are set up we can plot the second average
+            ephy_plot_intensity(axes, map_times1[:-1], ridge1, chanel, shank_dic, graph_dic['hm_power'])#axes are set up we can plot the second average
             
             chanel=0
             if plot_position < plot_nb:
@@ -645,13 +645,13 @@ def ephy_plot_power (axes, power_map, extent, chanel, shank_dic):
         axes.set_ylabel('Frequency (Hz)')
 
 
-def ephy_plot_intensity(axes, map_times, ridge, chanel, shank_dic):
+def ephy_plot_intensity(axes, map_times, ridge, chanel, shank_dic, graph_power):
     axes.plot(map_times,ridge,color='r',alpha=0.5)            
     axes.set_title(fr'Ch group {chanel}: Intensity of the ridge')
     if shank_dic['both'] and chanel == 1:
         pass
     else:
-        axes.set_ylabel('Intensity (V)')
+        axes.set_ylabel('Intensity')
 
 def ephy_plot_frequency(axes, map_times, y, chanel, shank_dic):
     axes.plot(map_times,y,color='r',alpha=0.5)            

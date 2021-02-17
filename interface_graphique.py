@@ -12,7 +12,7 @@ import extrapy.Behaviour as B
 import extrapy.Organize as og
 import numpy as np
 import pandas as pd
-import GUI_function_working as gf
+import GUI_function as gf
 import glob
 import os
 import pickle

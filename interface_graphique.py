@@ -29,8 +29,7 @@ def title_maker(info_exp_dic, average):
 
 def key_finder(key_part):
     """return the list of keys containing le value key_part"""
-    keys = [key for key in data['raw_data'].keys() if str(key_part) in key]
-    return keys
+    return [key for key in data['raw_data'].keys() if str(key_part) in key]
 
 def plot_maker(data, new_fig):
     

@@ -12,7 +12,7 @@ import extrapy.Behaviour as B
 import extrapy.Organize as og
 import numpy as np
 import pandas as pd
-import GUI_function as gf
+import GUI_function_working as gf
 import glob
 import os
 import pickle
@@ -39,17 +39,22 @@ def plot_maker(data, new_fig):
             plot_nb +=1
     
     if data['shank_dic']['both']:
-        chanel=0
+        chanel=[0,1]
         column=2
     elif data['shank_dic']['chanel0']:
         column=1
-        chanel=0
+        chanel=[0]
     elif data['shank_dic']['chanel1']:
         column=1
-        chanel=1
+        chanel=[1]
     elif data['shank_dic']['electrode']:
-        column=1
-        chanel=data['shank_dic']['electrode_nb']
+        if data['shank_dic']['electrode_nb'] == 'all':
+            column = 4
+            plot_nb = int(data['graph_dic']['raster']) + int(data['graph_dic']['PSTH']) + int(data['graph_dic']['wheel']) + 4
+            chanel = [14, 9, 12, 11, 10, 13, 8, 15, 7, 0, 5, 2, 3, 4, 1, 6]         
+        else:
+            column=1
+            chanel=[data['shank_dic']['electrode_nb']]
     
     title = title_maker(data['info_exp_dic'], data['average'])
     if new_fig:
@@ -73,22 +78,32 @@ def plot_maker(data, new_fig):
                     ax.append(fig_list[0].add_subplot(gs[ax_nb, :], sharex=ax[0]))
                 ax_nb +=1
                 
-    for key, plot_choice in data['graph_dic'].items(): #the two seperate loop is done to be sure the behaviour data are plot first and electrophy after
-        if plot_choice:
-            if key != 'raster' and key != 'PSTH' and key != 'wheel':
-                if data['shank_dic']['both']:
-                    if ax_nb == 0:
-                        ax.append(fig_list[0].add_subplot(gs[ax_nb, 0]))
-                        ax.append(fig_list[0].add_subplot(gs[ax_nb, 1], sharex=ax[0]))
-                    else:
-                        ax.append(fig_list[0].add_subplot(gs[ax_nb, 0], sharex=ax[0]))
-                        ax.append(fig_list[0].add_subplot(gs[ax_nb, 1], sharex=ax[0])) 
+    if data['shank_dic']['electrode_nb'] == 'all':
+        for column_all in range(4):
+            for row_all in range(ax_nb, 4+ax_nb):
+                if ax_nb == 0 and column_all == 0 and row_all == 0:
+                    ax.append(fig_list[0].add_subplot(gs[row_all, column_all]))
                 else:
-                    if ax_nb == 0:
-                        ax.append(fig_list[0].add_subplot(gs[ax_nb, :]))
+                    ax.append(fig_list[0].add_subplot(gs[row_all, column_all], sharex=ax[0]))
+
+    else:            
+        for key, plot_choice in data['graph_dic'].items(): #the two seperate loop is done to be sure the behaviour data are plot first and electrophy after
+            if plot_choice:
+                if key != 'raster' and key != 'PSTH' and key != 'wheel':
+                    if data['shank_dic']['both']:
+                        if ax_nb == 0:
+                            ax.append(fig_list[0].add_subplot(gs[ax_nb, 0]))
+                            ax.append(fig_list[0].add_subplot(gs[ax_nb, 1], sharex=ax[0]))
+                        else:
+                            ax.append(fig_list[0].add_subplot(gs[ax_nb, 0], sharex=ax[0]))
+                            ax.append(fig_list[0].add_subplot(gs[ax_nb, 1], sharex=ax[0]))
+                            
                     else:
-                        ax.append(fig_list[0].add_subplot(gs[ax_nb, :], sharex=ax[0]))
-                ax_nb +=1
+                        if ax_nb == 0:
+                            ax.append(fig_list[0].add_subplot(gs[ax_nb, :]))
+                        else:
+                            ax.append(fig_list[0].add_subplot(gs[ax_nb, :], sharex=ax[0]))
+                    ax_nb +=1
     
     plot_position = 0
     axes=ax[plot_position]
@@ -121,83 +136,47 @@ def plot_maker(data, new_fig):
         axes.set_title('Wheel speed') #PSTH y label
         plot_position +=1
     
-    if data['graph_dic']['raw_data']:
-        axes=ax[plot_position]
-        current_chanel=key_finder(chanel)[0]
-        gf.ephy_plot_raw_data(axes, data['raw_data'], current_chanel, data['shank_dic'])
-        if data['shank_dic']['both']:
-            chanel +=1
-            plot_position +=1
+    for chanel_nb in chanel:
+        if data['graph_dic']['raw_data']:
             axes=ax[plot_position]
-            current_chanel=key_finder(chanel)[0]
+            current_chanel=key_finder(chanel_nb)[0]
             gf.ephy_plot_raw_data(axes, data['raw_data'], current_chanel, data['shank_dic'])
-            chanel =0
-        plot_position +=1
-    
-    if data['graph_dic']['phase']:
-        axes=ax[plot_position]
-        current_chanel=key_finder(chanel)[0]
-        gf.ephy_plot_phase(axes, data['phase_data'], current_chanel, data['shank_dic'], data['phase_parameters'])
-        if data['shank_dic']['both']:
-            chanel +=1
             plot_position +=1
-            axes=ax[plot_position]
-            current_chanel=key_finder(chanel)[0]
-            gf.ephy_plot_phase(axes, data['phase_data'], current_chanel, data['shank_dic'], data['phase_parameters'])
-            chanel =0
-        plot_position +=1
         
-    if data['graph_dic']['amplitude']:
-        axes=ax[plot_position]
-        current_chanel=key_finder(chanel)[0]
-        gf.ephy_plot_amplitude(axes, data['complex_data'][current_chanel]['ampl_map'], data['complex_data'][current_chanel]['extent'], current_chanel, data['shank_dic'])
-        if data['shank_dic']['both']:
-            chanel +=1
-            plot_position +=1
-            axes=ax[plot_position]
-            current_chanel=key_finder(chanel)[0]
-            gf.ephy_plot_amplitude(axes, data['complex_data'][current_chanel]['ampl_map'], data['complex_data'][current_chanel]['extent'], current_chanel, data['shank_dic'])
-            chanel =0
-        plot_position +=1
-        
-    if data['graph_dic']['power']:
-        axes=ax[plot_position]
-        current_chanel=key_finder(chanel)[0]
-        gf.ephy_plot_power(axes, data['complex_data'][current_chanel]['power_map'], data['complex_data'][current_chanel]['extent'], current_chanel, data['shank_dic'])
-        if data['shank_dic']['both']:
-            chanel +=1
-            plot_position +=1
-            axes=ax[plot_position]
-            current_chanel=key_finder(chanel)[0]
-            gf.ephy_plot_power(axes, data['complex_data'][current_chanel]['power_map'], data['complex_data'][current_chanel]['extent'], current_chanel, data['shank_dic'])
-            chanel =0
-        plot_position +=1
-        
-    if data['graph_dic']['intensity']:
-        axes=ax[plot_position]
-        current_chanel=key_finder(chanel)[0]
-        gf.ephy_plot_intensity(axes, data['data_ridge_line'][current_chanel]['map_times'][:-1], data['data_ridge_line'][current_chanel]['ridge'], current_chanel, data['shank_dic'])
-        if data['shank_dic']['both']:
-            chanel +=1
-            plot_position +=1
-            axes=ax[plot_position]
-            current_chanel=key_finder(chanel)[0]
-            gf.ephy_plot_intensity(axes, data['data_ridge_line'][current_chanel]['map_times'][:-1], data['data_ridge_line'][current_chanel]['ridge'], current_chanel, data['shank_dic'])
-            chanel =0
-        plot_position +=1
-        
-    if data['graph_dic']['frequency']:
-        axes=ax[plot_position]
-        current_chanel=key_finder(chanel)[0]
-        gf.ephy_plot_frequency(axes, data['data_ridge_line'][current_chanel]['map_times'][:-1], data['data_ridge_line'][current_chanel]['y'], current_chanel, data['shank_dic'])
-        if data['shank_dic']['both']:
-            chanel +=1
-            plot_position +=1
-            axes=ax[plot_position]
-            current_chanel=key_finder(chanel)[0]
-            gf.ephy_plot_frequency(axes, data['data_ridge_line'][current_chanel]['map_times'][:-1], data['data_ridge_line'][current_chanel]['y'], current_chanel, data['shank_dic'])
-            chanel =0
-        plot_position +=1
+        if data['shank_dic']['electrode_nb'] != 'all':
+            if data['graph_dic']['phase']:
+                axes=ax[plot_position]
+                current_chanel=key_finder(chanel)[0]
+                gf.ephy_plot_phase(axes, data['phase_data'], current_chanel, data['shank_dic'], data['phase_parameters'])
+                plot_position +=1
+                
+            if data['graph_dic']['amplitude']:
+                axes=ax[plot_position]
+                current_chanel=key_finder(chanel_nb)[0]
+                gf.ephy_plot_amplitude(axes, data['complex_data'][current_chanel]['amplitude_map'], 
+                                       data['complex_data'][current_chanel]['extent'], current_chanel, data['shank_dic'])
+                plot_position +=1
+                
+            if data['graph_dic']['power']:
+                axes=ax[plot_position]
+                current_chanel=key_finder(chanel_nb)[0]
+                gf.ephy_plot_power(axes, data['complex_data'][current_chanel]['power_map'], 
+                                   data['complex_data'][current_chanel]['extent'], current_chanel, data['shank_dic'])
+                plot_position +=1
+                
+            if data['graph_dic']['intensity']:
+                axes=ax[plot_position]
+                current_chanel=key_finder(chanel_nb)[0]
+                gf.ephy_plot_intensity(axes, data['data_ridge_line'][current_chanel]['map_times'][:-1], 
+                                       data['data_ridge_line'][current_chanel]['ridge'], current_chanel, data['shank_dic'])
+                plot_position +=1
+                
+            if data['graph_dic']['frequency']:
+                axes=ax[plot_position]
+                current_chanel=key_finder(chanel_nb)[0]
+                gf.ephy_plot_frequency(axes, data['data_ridge_line'][current_chanel]['map_times'][:-1], 
+                                       data['data_ridge_line'][current_chanel]['y'], current_chanel, data['shank_dic'])
+                plot_position +=1
     
     axes.set_xlabel('Time (s)') #PSTH x label 
     
@@ -365,7 +344,9 @@ def window_trial_update(data, trial_dic, average):
                                                     #####TAG LIST WINDOW#####
                                                     #########################
 def window_tag_list_maker(location=(650,0)):
-    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))    
+    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
+    
     treedata = sg.TreeData()
     if os.path.exists('taged_trials.txt'):
         with open ('taged_trials.txt', 'rb') as tag_trials_file:
@@ -462,15 +443,16 @@ def selection_plot(data):
         plot_maker(data, new_fig=False)
 
         return data
-
 def selection_save(path_save_selection, data):
     w = pd.ExcelWriter(fr'{path_save_selection}.xlsx')
     if 'complex_data' in data:
         for shank in data['complex_data']:
             columns_name = np.arange(data['complex_data'][shank]['freqs'][0], data['complex_data'][shank]['freqs'][-1]+data['complex_data'][shank]['delta_freq'], data['complex_data'][shank]['delta_freq'])
-            row_name = np.arange(data['complex_data'][shank]['extent'][0], data['complex_data'][shank]['extent'][1]+(1/data['complex_data'][shank]['tfr_sampling_rate']), (1/data['complex_data'][shank]['tfr_sampling_rate']))
-            power_to_excel = pd.DataFrame(data['complex_data'][shank]['power_map'], index=row_name, columns=columns_name)
-            power_to_excel.to_excel(w, sheet_name=f"{shank}_{data['info_exp_dic']['protocol_type']}_{data['info_exp_dic']['condition_type']}_{data['info_exp_dic']['current_time_displayed']}")
+            power_to_excel = pd.DataFrame(data['complex_data'][shank]['power_map'], index=data['complex_data'][shank]['map_times'], columns=columns_name)
+            power_to_excel.to_excel(w, sheet_name=f"Median,{shank},{data['info_exp_dic']['current_time_displayed']}".replace(' ','_'))
+            if 'power_MAD' in data['complex_data'][shank].keys():
+                MAD_power_to_excel = pd.DataFrame(data['complex_data'][shank]['power_MAD'], index=data['complex_data'][shank]['map_times'], columns=columns_name)
+                MAD_power_to_excel.to_excel(w, sheet_name=f"MAD,{shank},{data['info_exp_dic']['current_time_displayed']}".replace(' ','_'))
         w.save()
     else:
          sg.popup_error('No power map found')
@@ -515,7 +497,7 @@ def main_window():
     shank_selection_section = [[sg.Frame(layout=[[sg.Radio('Chanel 0','radio_shank', key='Ch_group0', default=False, enable_events=True), sg.Radio('Chanel 1','radio_shank',key='Ch_group1', default=False, enable_events=True), sg.Radio('Both','radio_shank',key='Ch_groupboth', default=True, enable_events=True)]]
                                          ,title='Shank selection',title_color='red', relief=sg.RELIEF_SUNKEN, pad=(0,10))]]
     
-    electrode_list = ['Shank 1: 14','Shank 1: 9','Shank 1: 12','Shank 1: 11','Shank 1: 10','Shank 1: 13','Shank 1: 8','Shank 1: 15',
+    electrode_list = ['All electrodes', 'Shank 1: 14','Shank 1: 9','Shank 1: 12','Shank 1: 11','Shank 1: 10','Shank 1: 13','Shank 1: 8','Shank 1: 15',
                      'Shank 2: 7','Shank 2: 0','Shank 2: 5','Shank 2: 2','Shank 2: 3', 'Shank 2: 4','Shank 2: 1','Shank 2: 6']
     
     electrode_selection_section = [[sg.Frame(layout=[[sg.InputCombo(values=electrode_list, default_value=electrode_list[0], size=(15, 1), key='electrode_nb', enable_events=True)]]
@@ -762,7 +744,8 @@ while True:
         
         if event=='tag':
             if values['trial_by_trial']:
-                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
@@ -791,7 +774,8 @@ while True:
 
         if event=='untag':
             if values['trial_by_trial']:
-                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
@@ -854,10 +838,17 @@ while True:
         if event == 'radio_by_electrode':
             window['shank_selection_section'].update(visible=False)
             window['electrode_selection_section'].update(visible=True)
-            data['shank_dic'].update({'chanel0':values['radio_by_shank'], 'chanel1':values['radio_by_shank'], 'both':values['radio_by_shank'], 'electrode':values['radio_by_electrode'], 'electrode_nb':int(values['electrode_nb'].split(' ')[-1])})
+            if values['electrode_nb'] == 'All electrodes':
+                data['shank_dic'].update({'chanel0':values['radio_by_shank'], 'chanel1':values['radio_by_shank'], 'both':values['radio_by_shank'], 'electrode':values['radio_by_electrode'], 'electrode_nb':'all'})
+            else:
+                data['shank_dic'].update({'chanel0':values['radio_by_shank'], 'chanel1':values['radio_by_shank'], 'both':values['radio_by_shank'], 'electrode':values['radio_by_electrode'], 'electrode_nb':int(values['electrode_nb'].split(' ')[-1])})
         
         if event == 'electrode_nb':
-            data['shank_dic']['electrode_nb']=int(values['electrode_nb'].split(' ')[-1])
+            if values['electrode_nb'] == 'All electrodes':
+                data['shank_dic']['electrode_nb']='all'
+                
+            else:
+                data['shank_dic']['electrode_nb']=int(values['electrode_nb'].split(' ')[-1])
 
         if event == 'phase_freq':
             data['phase_parameters'] = int(values['phase_freq'])
@@ -949,7 +940,8 @@ while True:
             data = selection_plot(data)
         
         if event == 'save_power_map':
-            path_save_selection = sg.popup_get_file('', no_window=True, save_as=True, default_path=f"mice nb{data['info_exp_dic']['mice_nb']}, {data['info_exp_dic']['experiment_type']}, {data['info_exp_dic']['protocol_type']}, {data['info_exp_dic']['condition_type']}")
+            path_save_selection = sg.popup_get_file('', no_window=True, save_as=True, 
+                                                    default_path=f"mice nb{data['info_exp_dic']['mice_nb']}, {data['info_exp_dic']['experiment_type']}, {data['info_exp_dic']['protocol_type']}, {data['info_exp_dic']['condition_type']}, {data['info_exp_dic']['current_time_displayed']}, {data['info_exp_dic']['condition_type']}")
             selection_save(path_save_selection, data)
                      
     #plotting

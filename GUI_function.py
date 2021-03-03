@@ -9,6 +9,7 @@ import extrapy.Scalogram as scalo
 import extrapy.Organize as og
 import extrapy.Filters as filters
 import numpy as np
+from scipy.stats import median_abs_deviation as mad
 from scipy.ndimage.filters import gaussian_filter1d
 import glob
 import os
@@ -254,7 +255,12 @@ def data_ephy_calc(list_files, bandpass_dic, shank_dic):
     elif shank_dic['both']:
         ch_group={'Ch_group 0':[14,9,12,11,10,13,8,15], 'Ch_group 1':[7,0,5,2,3,4,1,6]}
     elif shank_dic['electrode']:
-        ch_group={f"electrode nb {shank_dic['electrode_nb']}": [shank_dic['electrode_nb']]}
+        if shank_dic['electrode_nb'] == 'all':
+            ch_group={'electrode nb 0': [0], 'electrode nb 1': [1], 'electrode nb 2': [2], 'electrode nb 3': [3], 'electrode nb 4': [4], 'electrode nb 5': [5],
+                     'electrode nb 6': [6], 'electrode nb 7': [7], 'electrode nb 8': [8],'electrode nb 9': [9],'electrode nb 10': [10],
+                     'electrode nb 11': [11], 'electrode nb 12': [12],'electrode nb 13': [13],'electrode nb 14': [14],'electrode nb 15': [15]}
+        else:
+            ch_group={f"electrode nb {shank_dic['electrode_nb']}": [shank_dic['electrode_nb']]}
                
     data_ephy = {}
     for i in list_files:
@@ -274,25 +280,30 @@ def calc_complex(ephy_data, average, scalogram_parameters):
     if average:
         for v in ephy_data.values():
             for ind, val in v.items():
-                if not ind in complex_dic:
-                    complex_dic[ind]={'complex_map':[], 'map_times':[], 'freqs':[], 'tfr_sampling_rate':[], 'ampl_map':[], 'power_map':[]}
                 complex_map, map_times, freqs, tfr_sampling_rate = scalo.compute_timefreq(val, sampling_rate=20000, 
                                                                                           f_start=(scalogram_parameters['low']+0.1), 
                                                                                           f_stop=(scalogram_parameters['high']+0.1), 
                                                                                           delta_freq=0.1, nb_freq=None,f0=2.5,  
                                                                                           normalisation = 0, t_start=0)
-                complex_dic[ind]['complex_map'].append(complex_map)
-                complex_dic[ind]['map_times'].append(map_times)
-                complex_dic[ind]['freqs'].append(freqs)
-                complex_dic[ind]['tfr_sampling_rate'].append(tfr_sampling_rate)
-                ampl_map=np.abs(complex_map)
-                complex_dic[ind]['ampl_map'].append(ampl_map)
-                complex_dic[ind]['power_map'].append(ampl_map**2)
+                if not ind in complex_dic:
+                    complex_dic[ind]={'complex_map':complex_map, 'map_times':map_times, 'freqs':freqs, 'tfr_sampling_rate':tfr_sampling_rate, 
+                                      'amplitude_map':np.abs(complex_map), 'power_map':np.abs(complex_map)**2, 'power_MAD':None, 'amplitude_MAD':None}
+                else:
+                    complex_dic[ind]['complex_map'] = np.dstack((complex_dic[ind]['complex_map'], complex_map))
+                    ampl_map=np.abs(complex_map)
+                    complex_dic[ind]['amplitude_map'] = np.dstack((complex_dic[ind]['amplitude_map'], ampl_map))
+                    complex_dic[ind]['power_map'] = np.dstack((complex_dic[ind]['power_map'], ampl_map**2))
                 
                     
         for indx in complex_dic.keys():
             for key, value in complex_dic[indx].items():
-                complex_dic[indx][key]= np.median(value, axis=0)
+                if key == 'complex_map':
+                    complex_dic[indx][key]= np.mean(value, axis=2)
+                elif key == 'power_map' or key == 'amplitude_map':
+                    complex_dic[indx][key]= np.median(value, axis=2)
+                    complex_dic[indx][key.replace('map','MAD')]= mad(value, axis=2)
+                else:
+                    continue
             
         complex_dic = calc_extent(complex_dic)
 
@@ -308,7 +319,7 @@ def calc_complex(ephy_data, average, scalogram_parameters):
             power_map=ampl_map**2
             delta_freq = freqs[1] - freqs[0] 
             extent = (map_times[0], map_times[-1], freqs[0]-delta_freq/2., freqs[-1]+delta_freq/2.)
-            complex_dic[i]={'complex_map':complex_map, 'ampl_map':ampl_map, 'power_map':power_map, 'map_times':map_times, 
+            complex_dic[i]={'complex_map':complex_map, 'amplitude_map':ampl_map, 'power_map':power_map, 'map_times':map_times, 
                             'freqs':freqs, 'tfr_sampling_rate':tfr_sampling_rate, 'delta_freq':delta_freq, 'extent':extent}
             
     return complex_dic
@@ -339,7 +350,7 @@ def ridge_line_calc(complex_data, ridgle_line_parameters, power):
         if power:
             ridge_map = [complex_data[key]['power_map'], complex_data[key]['tfr_sampling_rate']]
         else:
-            ridge_map = [complex_data[key]['ampl_map'], complex_data[key]['tfr_sampling_rate']]
+            ridge_map = [complex_data[key]['amplitude_map'], complex_data[key]['tfr_sampling_rate']]
         ridge,theta,x,y = scalo.ridge_line(ridge_map[0],ridge_map[1],t0=0,t1=9,f0=ridgle_line_parameters['low'],f1=ridgle_line_parameters['high'], rescale=True)
         ridge_line_dic[key]={'ridge':ridge, 'theta':theta, 'x':x, 'y':y, 'map_times':complex_data[key]['map_times']}
     
@@ -435,7 +446,7 @@ def ephy_data_selection(complex_data, current_coordinate, x_only=False):
     for shank in complex_data.keys():
         complex_dic_temp = {}
         for key, value in complex_data[shank].items():
-            if 'complex' in key or 'ampl_map' in key or 'power' in key:
+            if 'complex' in key or 'amplitude' in key or 'power' in key:
                 if not x_only:
                     value_temp = value[:, int(((current_coordinate['y1']*10)-1)):int(((current_coordinate['y2']*10)-1))]
                 else:
@@ -443,7 +454,7 @@ def ephy_data_selection(complex_data, current_coordinate, x_only=False):
                 time = np.array(range(0,value.shape[0],1))/complex_data[shank]['tfr_sampling_rate']
                 value_temp = np.column_stack((time, value_temp))
                 value_temp = data_slicer(value_temp, current_coordinate, time_column=0, calc_y=False)
-                complex_dic_temp['map_times'] = np.append(value_temp[:,0],value_temp[-1,0])
+                complex_dic_temp['map_times'] = value_temp[:,0]
                 complex_dic_temp[key] = np.delete(value_temp, 0, axis=1)
             elif 'time' in key:
                 continue

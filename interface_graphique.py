@@ -81,10 +81,13 @@ def plot_maker(data, new_fig):
     if data['shank_dic']['electrode_nb'] == 'all':
         for column_all in range(4):
             for row_all in range(ax_nb, 4+ax_nb):
-                if ax_nb == 0 and column_all == 0 and row_all == 0:
-                    ax.append(fig_list[0].add_subplot(gs[row_all, column_all]))
+                if column_all == 0 and row_all == ax_nb:
+                    if ax_nb == 0:
+                        ax.append(fig_list[0].add_subplot(gs[row_all, column_all]))
+                    else:
+                        ax.append(fig_list[0].add_subplot(gs[row_all, column_all], sharex=ax[0]))
                 else:
-                    ax.append(fig_list[0].add_subplot(gs[row_all, column_all], sharex=ax[0]))
+                    ax.append(fig_list[0].add_subplot(gs[row_all, column_all], sharex=ax[0], sharey=ax[ax_nb]))
 
     else:            
         for key, plot_choice in data['graph_dic'].items(): #the two seperate loop is done to be sure the behaviour data are plot first and electrophy after

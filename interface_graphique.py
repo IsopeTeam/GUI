@@ -12,7 +12,7 @@ import extrapy.Behaviour as B
 import extrapy.Organize as og
 import numpy as np
 import pandas as pd
-import GUI_function_working as gf
+import GUI_function as gf
 import glob
 import os
 import pickle
@@ -250,53 +250,63 @@ def plot_master(data, trial_dic, new_fig=False):
                                               ######################
                                               ###TRIAL LIST MAKER###
                                               ######################
-def trial_list_maker (data, trial_dic):
-    try:
-        lick_data_temp = og.remove_empty_trials(data['path_dic']['lick_path'])
-    except:
-        window.FindElement('protocole').Update('')
-        window.FindElement('condition').Update('')
-        sg.popup_error('Lick file is empty')
-    
+def trial_list_maker (data, trial_dic, good_trial_only):
+    if good_trial_only:
+        try:
+            lick_data_temp = og.remove_empty_trials(data['path_dic']['lick_path'])
+        except:
+            window.FindElement('protocole').Update('')
+            window.FindElement('condition').Update('')
+            sg.popup_error('Lick file is empty')
     else:
-        if data['info_exp_dic']['condition_type'] == 'No Stim':
-            nb_trials= [1,30]
-        elif data['info_exp_dic']['condition_type'] == 'Stim':
-            nb_trials= [31,60]
-        else:
-            last_trial_nb = lick_data_temp[:,0]
-            nb_trials=[1, int(last_trial_nb[-1])]
-            
-        if data['info_exp_dic']['experiment_type'] == 'Fixed Delay': 
-            trial_data ={}
-            for i in range(nb_trials[0],nb_trials[1]+1):
-                index = np.where(lick_data_temp[:,0] == i)
-                if index[0].size > 0:
-                    trial_data[i]= np.array([[lick_data_temp[i,0],lick_data_temp[i,1]] for i in index[0]])
-            trial_dic_choice = {i: True for i in trial_data.keys()}
-            list_trial_display = [cle for cle, v in trial_dic_choice.items() if v]
-            trial_dic['500']= {'trial_data':trial_data, 'trial_dic_choice':trial_dic_choice, 'list_trial_display': list_trial_display}
-            trial_dic['list_time_display']=['500']
+        lick_data_temp = B.load_lickfile(data['path_dic']['lick_path'])
+        param_data = B.extract_random_delay(data['path_dic']['param_path'])
+        for trial in param_data:
+            if trial[1] not in lick_data_temp[:,0]:
+                try:
+                    index = np.amin(np.where(lick_data_temp[:,0]>trial[1]))
+                except ValueError:
+                    index = np.amax(np.where(lick_data_temp[:,0]<trial[1]))+1
+                lick_data_temp = np.insert(lick_data_temp, index, np.array([[trial[1],10]]),0)
+    
+    if data['info_exp_dic']['condition_type'] == 'No Stim':
+        nb_trials= [1,30]
+    elif data['info_exp_dic']['condition_type'] == 'Stim':
+        nb_trials= [31,60]
+    else:
+        last_trial_nb = lick_data_temp[:,0]
+        nb_trials=[1, int(last_trial_nb[-1])]
         
-        elif data['info_exp_dic']['experiment_type'] == 'Random Delay' or data['info_exp_dic']['experiment_type'] == 'Training':
-            random_delay=B.extract_random_delay(data['path_dic']['param_path'])
-            delays, licks_by_delay = B.separate_by_delay(random_delay, lick_data_temp)
-            
-            for cle in delays.keys():
-                if data['dic_graph_choice_time'][cle]:
-                    trial_data ={}
-                    for i in range(nb_trials[0],nb_trials[1]+1):
-                        index = np.where(licks_by_delay[cle][:,0] == i)
-                        if index[0].size > 0:
-                            trial_data[i]= np.array([[licks_by_delay[cle][i,0],licks_by_delay[cle][i,1]] for i in index[0]])
-                     
-                        trial_dic_choice = {i: True for i in trial_data.keys()}
-                        list_trial_display = [cle for cle, v in trial_dic_choice.items() if v]
-                        trial_dic[cle]= {'trial_data':trial_data, 'trial_dic_choice':trial_dic_choice, 'list_trial_display':list_trial_display}
-            
-            trial_dic['list_time_display']= [cle for cle, value in data['dic_graph_choice_time'].items() if value]
+    if data['info_exp_dic']['experiment_type'] == 'Fixed Delay': 
+        trial_data ={}
+        for i in range(nb_trials[0],nb_trials[1]+1):
+            index = np.where(lick_data_temp[:,0] == i)
+            if index[0].size > 0:
+                trial_data[i]= np.array([[lick_data_temp[i,0],lick_data_temp[i,1]] for i in index[0]])
+        trial_dic_choice = {i: True for i in trial_data.keys()}
+        list_trial_display = [cle for cle, v in trial_dic_choice.items() if v]
+        trial_dic['500']= {'trial_data':trial_data, 'trial_dic_choice':trial_dic_choice, 'list_trial_display': list_trial_display}
+        trial_dic['list_time_display']=['500']
+    
+    elif data['info_exp_dic']['experiment_type'] == 'Random Delay' or data['info_exp_dic']['experiment_type'] == 'Training':
+        random_delay=B.extract_random_delay(data['path_dic']['param_path'])
+        delays, licks_by_delay = B.separate_by_delay(random_delay, lick_data_temp)
+        
+        for cle in delays.keys():
+            if data['dic_graph_choice_time'][cle]:
+                trial_data ={}
+                for i in range(nb_trials[0],nb_trials[1]+1):
+                    index = np.where(licks_by_delay[cle][:,0] == i)
+                    if index[0].size > 0:
+                        trial_data[i]= np.array([[licks_by_delay[cle][i,0],licks_by_delay[cle][i,1]] for i in index[0]])
                  
-        return trial_dic
+                    trial_dic_choice = {i: True for i in trial_data.keys()}
+                    list_trial_display = [cle for cle, v in trial_dic_choice.items() if v]
+                    trial_dic[cle]= {'trial_data':trial_data, 'trial_dic_choice':trial_dic_choice, 'list_trial_display':list_trial_display}
+        
+        trial_dic['list_time_display']= [cle for cle, value in data['dic_graph_choice_time'].items() if value]
+                 
+    return trial_dic
 
                                                     ###############################
                                                     ######TRIAL LIST WINDOWS#######
@@ -514,6 +524,8 @@ def main_window():
                 [sg.pin(sg.Column(random_section, key='random_section'))],            
                 [sg.Text('Select protocole   '), sg.InputCombo(values=[], size=(20, 1), key='protocole', enable_events=True)],
                 [sg.Text('Select condition   '), sg.InputCombo(values=[], size=(20, 1), key='condition', enable_events=True)],
+                [sg.Radio('Only good trials', 'good_bad_trial_radio', key='good_trial_only', default=True, enable_events=True), 
+                 sg.Radio('All trials', 'good_bad_trial_radio', key='all_trial_only', enable_events=True, default=False)],
                 [ sg.Button('Tag list', key='-tag list-'), sg.Button('Trial list', key='-trial list-'), sg.Radio('All session average', 'radio_session', key='ws_average', default=True, enable_events=True), sg.Radio('Trial by trial','radio_session',key='trial_by_trial', default=False, enable_events=True)],
                 [sg.Button('previous trace',  key='previous'), sg.Button('next trace', key= 'next'), sg.Button('Tag',  key='tag'), sg.Button('Untag', key= 'untag')],
                 [sg.Button('Clear plot', key='-clear plot-', button_color=('red','white')), sg.Button('Selection toolbox',  key='Selection_toolbox')],
@@ -687,12 +699,17 @@ while True:
             trial_dic = {}
             trial_dic['time_displayed'] = 0 #we start by displaying the first time delay
             trial_dic['trial_displayed'] = 0 #we start by displaying the first trail
-            trial_dic = trial_list_maker(data, trial_dic)
+            trial_dic = trial_list_maker(data, trial_dic, values['good_trial_only'])
             list_trial = trial_dic[trial_dic['list_time_display'][trial_dic['time_displayed']]]['list_trial_display']
          
             
             window_trial_update(data, trial_dic, values['ws_average'])
             window_tag_update()
+            
+        if event == 'good_trial_only' or event == 'all_trial_only':
+            if data['info_exp_dic']['condition_type'] !='':
+                trial_dic = trial_list_maker(data, trial_dic, values['good_trial_only'])
+                window_trial_update(data, trial_dic, values['ws_average'])
         
         if event == '400' or event == '400_400' or event == '900_400' or event == '900_400' or event == '400_400_400' or event == '900_400_400' or event == '900'or event == '900_900'or event == '400_900'or event == '900_900_900'or event == '400_900_900':
             data['dic_graph_choice_time'] = {"400":values['400'],"400_400":values['400_400'],"900_400":values['900_400'],"400_400_400":values['400_400_400'],
@@ -700,7 +717,7 @@ while True:
                          ,"400_900":values['400_900'],"900_900_900":values['900_900_900'],"400_900_900":values['400_900_900']}
             
             if data['info_exp_dic']['condition_type'] !='':
-                trial_dic = trial_list_maker(data)
+                trial_dic = trial_list_maker(data, trial_dic, values['good_trial_only'])
                 window_trial_update(data, trial_dic, values['ws_average'])
         
         if event =='ws_average' or event == 'trial_by_trial':
@@ -806,7 +823,7 @@ while True:
             if not values['-TREE-'][0][0] in trial_dic['list_time_display']:    #if we want to display a trial when we didn't selected the coresponding time (400_900 for exemple) we need to tick the corresponding checkbox as well as remaking the trial_dic in order to include the data of that time
                 main_window.FindElement(values['-TREE-'][0][0]).Update(True)
                 data['dic_graph_choice_time'][values['-TREE-'][0][0]]=True
-                trial_dic = trial_list_maker(data, trial_dic)
+                trial_dic = trial_list_maker(data, trial_dic, values['good_trial_only'])
                 window_trial_update(data, trial_dic, False) #we refresh the trial list if open because we had a time in it
                 
             trial_dic['time_displayed'] = trial_dic['list_time_display'].index(values['-TREE-'][0][0])

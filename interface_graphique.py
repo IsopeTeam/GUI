@@ -89,24 +89,23 @@ def plot_maker(data, new_fig):
                 else:
                     ax.append(fig_list[0].add_subplot(gs[row_all, column_all], sharex=ax[0], sharey=ax[ax_nb]))
 
-    else:            
-        for key, plot_choice in data['graph_dic'].items(): #the two seperate loop is done to be sure the behaviour data are plot first and electrophy after
-            if plot_choice:
-                if key != 'raster' and key != 'PSTH' and key != 'wheel':
-                    if data['shank_dic']['both']:
-                        if ax_nb == 0:
-                            ax.append(fig_list[0].add_subplot(gs[ax_nb, 0]))
-                            ax.append(fig_list[0].add_subplot(gs[ax_nb, 1], sharex=ax[0]))
+    else:
+        for ax_chanel_nb in chanel:
+            ax_chanel = ax_nb
+            for key, plot_choice in data['graph_dic'].items(): #the two seperate loop is done to be sure the behaviour data are plot first and electrophy after
+                if plot_choice:
+                    if key != 'raster' and key != 'PSTH' and key != 'wheel':
+                        if data['shank_dic']['both']:
+                            if ax_nb == 0 and ax_chanel_nb == chanel[0]:
+                               ax.append(fig_list[0].add_subplot(gs[ax_chanel, ax_chanel_nb]))
+                            else:
+                                ax.append(fig_list[0].add_subplot(gs[ax_chanel, ax_chanel_nb], sharex=ax[0]))
                         else:
-                            ax.append(fig_list[0].add_subplot(gs[ax_nb, 0], sharex=ax[0]))
-                            ax.append(fig_list[0].add_subplot(gs[ax_nb, 1], sharex=ax[0]))
-                            
-                    else:
-                        if ax_nb == 0:
-                            ax.append(fig_list[0].add_subplot(gs[ax_nb, :]))
-                        else:
-                            ax.append(fig_list[0].add_subplot(gs[ax_nb, :], sharex=ax[0]))
-                    ax_nb +=1
+                            if ax_nb == 0:
+                                ax.append(fig_list[0].add_subplot(gs[ax_chanel, :]))
+                            else:
+                                ax.append(fig_list[0].add_subplot(gs[ax_chanel, :], sharex=ax[0]))
+                        ax_chanel +=1
     
     plot_position = 0
     axes=ax[plot_position]
@@ -149,7 +148,7 @@ def plot_maker(data, new_fig):
         if data['shank_dic']['electrode_nb'] != 'all':
             if data['graph_dic']['phase']:
                 axes=ax[plot_position]
-                current_chanel=key_finder(chanel)[0]
+                current_chanel=key_finder(chanel_nb)[0]
                 gf.ephy_plot_phase(axes, data['phase_data'], current_chanel, data['shank_dic'], data['phase_parameters'])
                 plot_position +=1
                 

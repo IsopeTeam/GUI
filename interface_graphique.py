@@ -51,7 +51,7 @@ def plot_maker(data, new_fig):
         if data['shank_dic']['electrode_nb'] == 'all':
             column = 4
             plot_nb = int(data['graph_dic']['raster']) + int(data['graph_dic']['PSTH']) + int(data['graph_dic']['wheel']) + 4
-            chanel = [14, 9, 12, 11, 10, 13, 8, 15, 7, 0, 5, 2, 3, 4, 1, 6]         
+            chanel = [14, 12, 10, 8, 9, 11, 13, 15, 7, 5, 3, 1, 0, 2, 4, 6]        
         else:
             column=1
             chanel=[data['shank_dic']['electrode_nb']]

@@ -508,8 +508,8 @@ def main_window():
     shank_selection_section = [[sg.Frame(layout=[[sg.Radio('Chanel 0','radio_shank', key='Ch_group0', default=False, enable_events=True), sg.Radio('Chanel 1','radio_shank',key='Ch_group1', default=False, enable_events=True), sg.Radio('Both','radio_shank',key='Ch_groupboth', default=True, enable_events=True)]]
                                          ,title='Shank selection',title_color='red', relief=sg.RELIEF_SUNKEN, pad=(0,10))]]
     
-    electrode_list = ['All electrodes', 'Shank 1: 14','Shank 1: 12','Shank 1: 10','Shank 1: 8','Shank 1: 9','Shank 1: 11','Shank 1: 13','Shank 1: 15',
-                     'Shank 2: 7','Shank 2: 5','Shank 2: 3','Shank 2: 1','Shank 2: 0', 'Shank 2: 2','Shank 2: 4','Shank 2: 6']
+    electrode_list = ['All electrodes', 'Shank 1: 14','Shank 1: 9','Shank 1: 12','Shank 1: 11','Shank 1: 10','Shank 1: 13','Shank 1: 8','Shank 1: 15',
+                     'Shank 2: 7','Shank 2: 0','Shank 2: 5','Shank 2: 2','Shank 2: 3', 'Shank 2: 4','Shank 2: 1','Shank 2: 6']
     
     electrode_selection_section = [[sg.Frame(layout=[[sg.InputCombo(values=electrode_list, default_value=electrode_list[0], size=(15, 1), key='electrode_nb', enable_events=True)]]
                                          ,title='Electrode selection',title_color='red', relief=sg.RELIEF_SUNKEN, pad=(0,10))]]

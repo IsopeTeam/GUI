@@ -247,13 +247,13 @@ def data_ephy_calc(list_files, bandpass_dic, shank_dic):
     if bandpass_dic['low'] == 0:
         bandpass_dic['low'] = 0.1
 
-    #Structure of the probe Chanel 0:[14,9,12,11,10,13,8,15],  Chanel 1:[7,0,5,2,3,4,1,6]   
+    #Structure of the probe Chanel 0:[14, 12, 10, 8, 9, 11, 13, 15],  Chanel 1:[7, 5, 3, 1, 0, 2, 4, 6]   
     if shank_dic['chanel0']:
-        ch_group={'Ch_group 0':[14,9,12,11,10,13,8,15]}
+        ch_group={'Ch_group 0':[14, 12, 10, 8, 9, 11, 13, 15]}
     elif shank_dic['chanel1']:
-        ch_group={'Ch_group 1':[7,0,5,2,3,4,1,6]}
+        ch_group={'Ch_group 1':[7, 5, 3, 1, 0, 2, 4, 6]}
     elif shank_dic['both']:
-        ch_group={'Ch_group 0':[14,9,12,11,10,13,8,15], 'Ch_group 1':[7,0,5,2,3,4,1,6]}
+        ch_group={'Ch_group 0':[14, 12, 10, 8, 9, 11, 13, 15], 'Ch_group 1':[7, 5, 3, 1, 0, 2, 4, 6]}
     elif shank_dic['electrode']:
         if shank_dic['electrode_nb'] == 'all':
             ch_group={'electrode nb 0': [0], 'electrode nb 1': [1], 'electrode nb 2': [2], 'electrode nb 3': [3], 'electrode nb 4': [4], 'electrode nb 5': [5],

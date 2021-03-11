@@ -246,7 +246,7 @@ def data_ephy_calc(list_files, bandpass_dic, shank_dic):
     
     if bandpass_dic['low'] == 0:
         bandpass_dic['low'] = 0.1
-
+        
     #Structure of the probe Chanel 0:[14, 12, 10, 8, 9, 11, 13, 15],  Chanel 1:[7, 5, 3, 1, 0, 2, 4, 6]   
     if shank_dic['chanel0']:
         ch_group={'Ch_group 0':[14, 12, 10, 8, 9, 11, 13, 15]}
@@ -361,6 +361,8 @@ def ephy_plot_raw_data(axes, average_data, current_chanel, shank_dic):
     axes.set_title(f'{current_chanel}: Raw data')
     if  shank_dic['both'] and current_chanel == 'Ch_group 1': 
         pass
+    elif shank_dic['electrode_nb'] == 'all' and '14' not in current_chanel and '12' not in current_chanel and '10' not in current_chanel and '8' not in current_chanel:
+        pass
     else:
         axes.set_ylabel('Intensity (V)')
 
@@ -368,6 +370,8 @@ def ephy_plot_phase(axes, phase_dic, current_chanel, shank_dic, phase_frequency)
     axes.plot(phase_dic[current_chanel][:,1], phase_dic[current_chanel][:,0])
     axes.set_title(f'{current_chanel}: instantenious phase')
     if shank_dic['both'] and current_chanel == 'Ch_group 1': 
+        pass
+    elif shank_dic['electrode_nb'] == 'all' and '14' not in current_chanel and '12' not in current_chanel and '10' not in current_chanel and '8' not in current_chanel:
         pass
     else:
         axes.set_ylabel('Intensity (V)') 
@@ -378,6 +382,8 @@ def ephy_plot_amplitude( axes, ampl_map, extent, current_chanel, shank_dic):
     axes.set_title(f'{current_chanel}: Amplitude')
     if  shank_dic['both'] and current_chanel == 'Ch_group 1': 
         pass
+    elif shank_dic['electrode_nb'] == 'all' and '14' not in current_chanel and '12' not in current_chanel and '10' not in current_chanel and '8' not in current_chanel:
+        pass
     else:
         axes.set_ylabel('Frequency (Hz)')
     
@@ -386,6 +392,8 @@ def ephy_plot_power (axes, power_map, extent, current_chanel, shank_dic):
     axes.imshow(power_map.transpose(), interpolation='nearest', origin ='lower', aspect = 'auto', extent = extent, cmap='viridis')
     axes.set_title(f'{current_chanel}: Power')
     if  shank_dic['both'] and current_chanel == 'Ch_group 1': 
+        pass
+    elif shank_dic['electrode_nb'] == 'all' and '14' not in current_chanel and '12' not in current_chanel and '10' not in current_chanel and '8' not in current_chanel:
         pass
     else:
         axes.set_ylabel('Frequency (Hz)')
@@ -396,6 +404,8 @@ def ephy_plot_intensity(axes, map_times, ridge, current_chanel, shank_dic):
     axes.set_title(f'{current_chanel}: Intensity of the ridge')
     if shank_dic['both'] and current_chanel == 'Ch_group 1':
         pass
+    elif shank_dic['electrode_nb'] == 'all' and '14' not in current_chanel and '12' not in current_chanel and '10' not in current_chanel and '8' not in current_chanel:
+        pass
     else:
         axes.set_ylabel('Intensity')
 
@@ -403,6 +413,8 @@ def ephy_plot_frequency(axes, map_times, y, current_chanel, shank_dic):
     axes.plot(map_times,y,color='r',alpha=0.5)            
     axes.set_title(f'{current_chanel}: Frequency of the ridge')
     if shank_dic['both'] and current_chanel == 'Ch_group 1':
+        pass
+    elif shank_dic['electrode_nb'] == 'all' and '14' not in current_chanel and '12' not in current_chanel and '10' not in current_chanel and '8' not in current_chanel:
         pass
     else:
         axes.set_ylabel('Frequency (Hz)')

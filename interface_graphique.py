@@ -51,7 +51,7 @@ def plot_maker(data, new_fig):
         if data['shank_dic']['electrode_nb'] == 'all':
             column = 4
             plot_nb = int(data['graph_dic']['raster']) + int(data['graph_dic']['PSTH']) + int(data['graph_dic']['wheel']) + 4
-            chanel = [14, 12, 10, 8, 9, 11, 13, 15, 7, 5, 3, 1, 0, 2, 4, 6]        
+            chanel = [14, 12, 10, 8, 9, 11, 13, 15, 7, 5, 3, 1, 0, 2, 4, 6]         
         else:
             column=1
             chanel=[data['shank_dic']['electrode_nb']]
@@ -145,40 +145,39 @@ def plot_maker(data, new_fig):
             gf.ephy_plot_raw_data(axes, data['raw_data'], current_chanel, data['shank_dic'])
             plot_position +=1
         
-        if data['shank_dic']['electrode_nb'] != 'all':
-            if data['graph_dic']['phase']:
-                axes=ax[plot_position]
-                current_chanel=key_finder(chanel_nb)[0]
-                gf.ephy_plot_phase(axes, data['phase_data'], current_chanel, data['shank_dic'], data['phase_parameters'])
-                plot_position +=1
-                
-            if data['graph_dic']['amplitude']:
-                axes=ax[plot_position]
-                current_chanel=key_finder(chanel_nb)[0]
-                gf.ephy_plot_amplitude(axes, data['complex_data'][current_chanel]['amplitude_map'], 
-                                       data['complex_data'][current_chanel]['extent'], current_chanel, data['shank_dic'])
-                plot_position +=1
-                
-            if data['graph_dic']['power']:
-                axes=ax[plot_position]
-                current_chanel=key_finder(chanel_nb)[0]
-                gf.ephy_plot_power(axes, data['complex_data'][current_chanel]['power_map'], 
+        if data['graph_dic']['phase']:
+            axes=ax[plot_position]
+            current_chanel=key_finder(chanel_nb)[0]
+            gf.ephy_plot_phase(axes, data['phase_data'], current_chanel, data['shank_dic'], data['phase_parameters'])
+            plot_position +=1
+            
+        if data['graph_dic']['amplitude']:
+            axes=ax[plot_position]
+            current_chanel=key_finder(chanel_nb)[0]
+            gf.ephy_plot_amplitude(axes, data['complex_data'][current_chanel]['amplitude_map'], 
                                    data['complex_data'][current_chanel]['extent'], current_chanel, data['shank_dic'])
-                plot_position +=1
-                
-            if data['graph_dic']['intensity']:
-                axes=ax[plot_position]
-                current_chanel=key_finder(chanel_nb)[0]
-                gf.ephy_plot_intensity(axes, data['data_ridge_line'][current_chanel]['map_times'][:-1], 
-                                       data['data_ridge_line'][current_chanel]['ridge'], current_chanel, data['shank_dic'])
-                plot_position +=1
-                
-            if data['graph_dic']['frequency']:
-                axes=ax[plot_position]
-                current_chanel=key_finder(chanel_nb)[0]
-                gf.ephy_plot_frequency(axes, data['data_ridge_line'][current_chanel]['map_times'][:-1], 
-                                       data['data_ridge_line'][current_chanel]['y'], current_chanel, data['shank_dic'])
-                plot_position +=1
+            plot_position +=1
+            
+        if data['graph_dic']['power']:
+            axes=ax[plot_position]
+            current_chanel=key_finder(chanel_nb)[0]
+            gf.ephy_plot_power(axes, data['complex_data'][current_chanel]['power_map'], 
+                               data['complex_data'][current_chanel]['extent'], current_chanel, data['shank_dic'])
+            plot_position +=1
+            
+        if data['graph_dic']['intensity']:
+            axes=ax[plot_position]
+            current_chanel=key_finder(chanel_nb)[0]
+            gf.ephy_plot_intensity(axes, data['data_ridge_line'][current_chanel]['map_times'][:-1], 
+                                   data['data_ridge_line'][current_chanel]['ridge'], current_chanel, data['shank_dic'])
+            plot_position +=1
+            
+        if data['graph_dic']['frequency']:
+            axes=ax[plot_position]
+            current_chanel=key_finder(chanel_nb)[0]
+            gf.ephy_plot_frequency(axes, data['data_ridge_line'][current_chanel]['map_times'][:-1], 
+                                   data['data_ridge_line'][current_chanel]['y'], current_chanel, data['shank_dic'])
+            plot_position +=1
     
     axes.set_xlabel('Time (s)') #PSTH x label 
     
@@ -356,7 +355,8 @@ def window_trial_update(data, trial_dic, average):
                                                     #####TAG LIST WINDOW#####
                                                     #########################
 def window_tag_list_maker(location=(650,0)):
-    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
     
     treedata = sg.TreeData()
     if os.path.exists('taged_trials.txt'):
@@ -762,7 +762,8 @@ while True:
         
         if event=='tag':
             if values['trial_by_trial']:
-                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
@@ -791,7 +792,8 @@ while True:
 
         if event=='untag':
             if values['trial_by_trial']:
-                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
@@ -908,7 +910,7 @@ while True:
             data = plot_master(data, trial_dic)
         
         if event=='select_taged_update':
-            os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+            os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
             if os.path.exists('taged_trials.txt'):
                 with open ('taged_trials.txt', 'rb') as tag_trials_file:
                     my_depickler = pickle.Unpickler(tag_trials_file)
@@ -925,7 +927,7 @@ while True:
                 sg.popup_error('No tag trial found')
                     
         if event=='deselect_taged_update':
-            os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+            os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
             if os.path.exists('taged_trials.txt'):
                 with open ('taged_trials.txt', 'rb') as tag_trials_file:
                     my_depickler = pickle.Unpickler(tag_trials_file)

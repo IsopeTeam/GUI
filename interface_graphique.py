@@ -355,8 +355,8 @@ def window_trial_update(data, trial_dic, average):
                                                     #####TAG LIST WINDOW#####
                                                     #########################
 def window_tag_list_maker(location=(650,0)):
-    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
-    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
+    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+    #os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
     
     treedata = sg.TreeData()
     if os.path.exists('taged_trials.txt'):
@@ -672,7 +672,7 @@ while True:
             
             path_dic = gf.path_finder(values['main_folder'], data['info_exp_dic'])
             
-            if data['info_exp_dic']['protocol_type'] == 'NB' or data['info_exp_dic']['protocol_type'] == 'P0' or data['info_exp_dic']['protocol_type'] == 'Training':
+            if data['info_exp_dic']['protocol_type'] == 'NB' or data['info_exp_dic']['protocol_type'] == 'P0' or data['info_exp_dic']['experiment_type'] == 'Training':
                 window.FindElement('condition').Update(values=['No Stim'])
             
             else:
@@ -762,8 +762,8 @@ while True:
         
         if event=='tag':
             if values['trial_by_trial']:
-                    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
-                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
+                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    #os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
@@ -792,8 +792,8 @@ while True:
 
         if event=='untag':
             if values['trial_by_trial']:
-                    #os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
-                    os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
+                    os.chdir(os.path.dirname(path_dic['list_condition_path_ephy'][0]))
+                    #os.chdir(os.path.dirname('C:\\Users\\Master5.INCI-NSN\\Desktop\\Pierre\\data'))
                     if os.path.exists('taged_trials.txt'):
                         with open ('taged_trials.txt', 'rb') as tag_trials_file:
                             my_depickler = pickle.Unpickler(tag_trials_file)
